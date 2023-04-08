@@ -75,10 +75,3 @@ def lambda_handler(event, context):
             scuceess_list.append(work_flow)
     connection.close()
     return scuceess_list
-
-
-if __name__ == '__main__':
-    event = 'scheuler testing...'
-    context = 'scheuler testing...'
-    scuceess_list = lambda_handler(event, context)
-    print('測試結果', scuceess_list)

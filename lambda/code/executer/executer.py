@@ -114,10 +114,3 @@ def lambda_handler(event, context):
     job_details = get_jobs(body)
     result = executer(body, job_details)
     return result
-
-
-if __name__ == '__main__':
-    event = {'Records': [{'messageId': '1', 'receiptHandle': '1',
-                          'body': '{"id": 1, "trigger_type": "scheduled", "next_execute_time": "2023-04-05 14:40:25", "wf_instance_id": 12, "job_instance": [{"id": 1, "workflow_id": 1, "job_name": "get_weather_temp", "function_id": 1, "job_priority": 1, "depends_job_id": null, "config": "{\\"city\\": \\"\\u6f8e\\u6e56\\u7e23\\", \\"condition\\": \\"MinT, 22\\"}", "function_name": "get_weather_temp", "function_type": "function", "job_instance_id": 26}, {"id": 2, "workflow_id": 1, "job_name": "send_message_discord", "function_id": 2, "job_priority": 2, "depends_job_id": 2, "config": "{\\"user_message\\": \\"\\u5929\\u6c23\\u904e\\u65bc\\u4f4e\\u6eab\\uff0c\\u8acb\\u591a\\u7a7f\\u8863\\u670d\\uff0c(DB)\\", \\"user_channel_ID\\": \\"1091690518016163842\\"}", "function_name": "send_message_discord", "function_type": "function", "job_instance_id": 27}]}'}]}
-    context = 'testing...'
-    lambda_handler(event, context)

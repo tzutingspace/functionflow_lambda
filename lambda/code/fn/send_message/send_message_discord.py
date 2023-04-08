@@ -22,7 +22,7 @@ def send_discord_message(user_channel_ID, user_message):
         return True
 
 
-def main(event, content):
+def lambda_handler(event, content):
     print('開始EVENT', event)
     start_time = get_now_time()
     body = json.loads(event['Records'][0]['body'])

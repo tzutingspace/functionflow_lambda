@@ -12,3 +12,6 @@ cdk.out
 
 # testing to ignore
 0-mytest/*
+
+.env
+*.txt

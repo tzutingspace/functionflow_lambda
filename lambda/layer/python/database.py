@@ -3,27 +3,13 @@ import os
 
 import importlib
 # from get_secret import get_secret
-
-if os.environ.get('ENV') == None:
-    module = importlib.import_module('dotenv')
-    module.load_dotenv()
-
-if os.environ['ENV'] == 'lambda':
-    db_settings = {
-        "host": os.environ["MYSQL_HOST"],
-        "port": 3306,
-        "user": os.environ["MYSQL_USER"],
-        "password": os.environ["MYSQL_PASSWORD"],
-        "db": os.environ['MYSQL_DATABASE']
-    }
-else:
-    db_settings = {
-        "host": os.environ["MYSQL_HOST"],
-        "port": 3306,
-        "user": os.environ["MYSQL_USER"],
-        "password": os.environ["MYSQL_PASSWORD"],
-        "db": os.environ['MYSQL_DATABASE']
-    }
+db_settings = {
+    "host": os.environ["MYSQL_HOST"],
+    "port": 3306,
+    "user": os.environ["MYSQL_USER"],
+    "password": os.environ["MYSQL_PASSWORD"],
+    "db": os.environ['MYSQL_DATABASE']
+}
 
 
 class Database:
