@@ -60,7 +60,7 @@ class FunctionflowCdkStack(Stack):
             no_echo=True,  # 配置参数不顯示
         )
         DISCORDBOTTOKEN = CfnParameter(
-            self, 'MIN_TIME_INTERVAL',
+            self, 'DISCORDBOTTOKEN',
             type='String',
             description='DISCORD BOT TOKEN',
             no_echo=True,  # 配置参数不顯示
@@ -72,12 +72,17 @@ class FunctionflowCdkStack(Stack):
             self, 'ExistingRole', role_arn=existing_role_arn
         )
 
-        CfnOutput(self, "ServiceAccountIamRole", value=existing_role.role_arn)
+        # Outputs出欲確認資料
+        # CfnOutput(self, "ServiceAccountIamRole", value=existing_role.role_arn)
 
         # Create a new SQS Queue
-        queue = sqs.Queue(self, "jobsQueue")
+        queue = sqs.Queue(self, "jobsQueue", queue_name='jobsQueue')
+        get_weather_queue = sqs.Queue(
+            self, "getWeatherQueue", queue_name='getWeatherQueue')
+        send_message_queue = sqs.Queue(
+            self, "sendMessageQueue", queue_name='sendMessageQueue')
 
-        # Defines an AWS Lambda resource
+        # Defines an AWS Lambda Layer
         lambdaLayer = _lambda.LayerVersion(
             self,
             "lambda-layer",
@@ -87,6 +92,8 @@ class FunctionflowCdkStack(Stack):
                                  _lambda.Runtime.PYTHON_3_9],
         )
 
+        # Defines an AWS Lambda resource
+        # scheduler
         scheduler = _lambda.Function(
             self, 'scheduler', runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset('lambda/code/scheduler'),
@@ -103,6 +110,7 @@ class FunctionflowCdkStack(Stack):
             }
         )
 
+        # executer
         executer = _lambda.Function(
             self, 'executer', runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset('lambda/code/executer'),
@@ -120,10 +128,11 @@ class FunctionflowCdkStack(Stack):
         event_source = SqsEventSource(queue)
         executer.add_event_source(event_source)
 
+        # get_weather
         get_weather = _lambda.Function(
             self, 'get_weather', runtime=_lambda.Runtime.PYTHON_3_9,
             code=_lambda.Code.from_asset('lambda/code/fn/get_weather'),
-            handler='executer.lambda_handler',
+            handler='get_weather.lambda_handler',
             layers=[lambdaLayer],
             role=existing_role,
             environment={
@@ -132,7 +141,27 @@ class FunctionflowCdkStack(Stack):
                 'MYSQL_USER': MYSQL_USER.value_as_string,
                 'MYSQL_PASSWORD': MYSQL_PASSWORD.value_as_string,
                 'MYSQL_DATABASE': MYSQL_DATABASE.value_as_string,
+                'OPENAPIKEY': OPENAPIKEY.value_as_string
             }
         )
-        event_source = SqsEventSource(queue)
-        executer.add_event_source(event_source)
+        get_weather_event_source = SqsEventSource(get_weather_queue)
+        get_weather.add_event_source(get_weather_event_source)
+
+        # send_message
+        send_message = _lambda.Function(
+            self, 'send_message', runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset('lambda/code/fn/send_message'),
+            handler='send_message.lambda_handler',
+            layers=[lambdaLayer],
+            role=existing_role,
+            environment={
+                'AWS_REGION_NAME': AWS_REGION_NAME.value_as_string,
+                'MYSQL_HOST': MYSQL_HOST.value_as_string,
+                'MYSQL_USER': MYSQL_USER.value_as_string,
+                'MYSQL_PASSWORD': MYSQL_PASSWORD.value_as_string,
+                'MYSQL_DATABASE': MYSQL_DATABASE.value_as_string,
+                'DISCORDBOTTOKEN': DISCORDBOTTOKEN.value_as_string
+            }
+        )
+        send_message_event_source = SqsEventSource(send_message_queue)
+        send_message.add_event_source(send_message_event_source)

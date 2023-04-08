@@ -103,7 +103,8 @@ def executer(body, job_details):
     # 將下一個任務放的queue
     job_details[0]['job_run_status'] = 'queued'
     body['transfer_job_info'] = job_details[0]
-    put_to_sqs(body, job_details[0]['function_name'])
+    print('queue name', job_details[0]['function_name'] + 'Queue')
+    put_to_sqs(body, job_details[0]['function_name'] + 'Queue')
     return True
 
 

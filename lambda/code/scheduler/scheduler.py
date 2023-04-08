@@ -70,7 +70,7 @@ def lambda_handler(event, context):
                 # work_flow['job_waiting_instance'].append(job)
             connection.commit()
             # 加入queue中
-            res = put_to_sqs(work_flow, 'mytestqueue')
+            res = put_to_sqs(work_flow, 'jobsQueue')
             work_flow['sqs_res'] = res
             scuceess_list.append(work_flow)
     connection.close()

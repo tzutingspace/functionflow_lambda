@@ -76,4 +76,4 @@ def lambda_handler(event, context):
     # 更新DB資訊
     body['transfer_job_info'] = update_db_job_status(job_info)
     # 寫回queue
-    put_to_sqs(body, 'mytestqueue')
+    put_to_sqs(body, 'jobsQueue')
