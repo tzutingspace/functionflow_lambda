@@ -65,6 +65,18 @@ class FunctionflowCdkStack(Stack):
             description='DISCORD BOT TOKEN',
             no_echo=True,  # 配置参数不顯示
         )
+        ENV = CfnParameter(
+            self, 'ENV',
+            type='String',
+            description='ENV',
+            no_echo=True,  # 配置参数不顯示
+        )
+        AWSQUEUEURL = CfnParameter(
+            self, 'AWSQUEUEURL',
+            type='String',
+            description='AWS QUEUE URL',
+            no_echo=True,  # 配置参数不顯示
+        )
 
         # 透過角色 ARN 來取得現有的 IAM 角色
         existing_role_arn = f'arn:aws:iam::{os.environ["AWS_ACCOUNT"]}:role/{os.environ["AWS_ROLE"]}'
@@ -106,7 +118,9 @@ class FunctionflowCdkStack(Stack):
                 'MYSQL_USER': MYSQL_USER.value_as_string,
                 'MYSQL_PASSWORD': MYSQL_PASSWORD.value_as_string,
                 'MYSQL_DATABASE': MYSQL_DATABASE.value_as_string,
-                'MIN_TIME_INTERVAL': MIN_TIME_INTERVAL.value_as_string
+                'MIN_TIME_INTERVAL': MIN_TIME_INTERVAL.value_as_string,
+                'ENV': ENV.value_as_string,
+                'AWS_QUEUE_URL': AWSQUEUEURL.value_as_string
             }
         )
 
@@ -123,6 +137,8 @@ class FunctionflowCdkStack(Stack):
                 'MYSQL_USER': MYSQL_USER.value_as_string,
                 'MYSQL_PASSWORD': MYSQL_PASSWORD.value_as_string,
                 'MYSQL_DATABASE': MYSQL_DATABASE.value_as_string,
+                'ENV': ENV.value_as_string,
+                'AWS_QUEUE_URL': AWSQUEUEURL.value_as_string
             }
         )
         event_source = SqsEventSource(queue)
@@ -141,7 +157,9 @@ class FunctionflowCdkStack(Stack):
                 'MYSQL_USER': MYSQL_USER.value_as_string,
                 'MYSQL_PASSWORD': MYSQL_PASSWORD.value_as_string,
                 'MYSQL_DATABASE': MYSQL_DATABASE.value_as_string,
-                'OPENAPIKEY': OPENAPIKEY.value_as_string
+                'OPENAPIKEY': OPENAPIKEY.value_as_string,
+                'ENV': ENV.value_as_string,
+                'AWS_QUEUE_URL': AWSQUEUEURL.value_as_string
             }
         )
         get_weather_event_source = SqsEventSource(get_weather_queue)
@@ -160,7 +178,9 @@ class FunctionflowCdkStack(Stack):
                 'MYSQL_USER': MYSQL_USER.value_as_string,
                 'MYSQL_PASSWORD': MYSQL_PASSWORD.value_as_string,
                 'MYSQL_DATABASE': MYSQL_DATABASE.value_as_string,
-                'DISCORDBOTTOKEN': DISCORDBOTTOKEN.value_as_string
+                'DISCORDBOTTOKEN': DISCORDBOTTOKEN.value_as_string,
+                'ENV': ENV.value_as_string,
+                'AWS_QUEUE_URL': AWSQUEUEURL.value_as_string
             }
         )
         send_message_event_source = SqsEventSource(send_message_queue)
