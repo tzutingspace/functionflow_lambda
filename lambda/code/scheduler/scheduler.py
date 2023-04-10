@@ -59,7 +59,7 @@ def lambda_handler(event, context):
 
             job_details = [dict((cursor.description[i][0], value)
                                 for i, value in enumerate(row)) for row in cursor.fetchall()]
-
+            QUEUE_OBJ['workflow'] = work_flow
             print(f'>>該 workflow 有 {len(job_details)} 筆Job')
         with connection.cursor() as cursor:
             QUEUE_OBJ['steps'] = {}
