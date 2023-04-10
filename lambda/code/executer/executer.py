@@ -44,14 +44,16 @@ def update_workflow_next_execute_time(body):
 def update_job_instances(body):
     connDB = Database()
     sql = f"UPDATE jobs_instances SET status=%s, start_time=%s, \
-                end_time=%s, result_input=%s, result_output=%s WHERE id=%s"
+                end_time=%s, result_output=%s WHERE id=%s"
 
     jobs = body["steps"]
     params = [(jobs[jobi]["status"], jobs[jobi]["start_time"], jobs[jobi]["end_time"],
-               jobs[jobi]["result_input"], jobs[jobi]["result_output"], jobs[jobi]["id"]) for jobi in jobs.keys()]
+               jobs[jobi]["result_output"], jobs[jobi]["id"]) for jobi in jobs.keys()]
     result = connDB.update(sql, params, many=True)
+    print('@update_job_instances', params)
+    print('@update_job_instances params', jobs)
     if result != len(body["steps"].keys()):
-        print(f'未全部更新成功， 請確認job id = {[(job[5]) for job in params]} 狀況')
+        print(f'未全部更新成功， 請確認job id = {[(job[4]) for job in params]} 狀況')
     connDB.close()
     return result
 
@@ -67,7 +69,7 @@ def lambda_handler(event, context):
     # current Job == waiting 表示剛進到executer >> 直接分配job
     if current_job_details["status"] == "waiting":
         body["workflow"]["start_time"] = get_now_time()
-        put_to_sqs(body, current_job_details["function_name"])
+        put_to_sqs(body, current_job_details["function_name"] + 'Queue')
         print(f'第一個job, 已放進放進SQS')
         return {"msg": "第一個job, 已放進放進SQS"}
 
@@ -84,7 +86,9 @@ def lambda_handler(event, context):
             next_job_name = standby_job[0]
             body["step_now"] = standby_job[0]
             print(f"下一個工作, 已放進放進SQS")
-            put_to_sqs(body, body["steps"][next_job_name]["function_name"])
+            sqs_name = body["steps"][next_job_name]["function_name"] + 'Queue'
+            print('queueName')
+            put_to_sqs(body, sqs_name)
             return {"msg": "下一個工作, 已放進放進SQS"}
         elif len(standby_job) == 0:
             body["workflow"]["status"] = "finished"

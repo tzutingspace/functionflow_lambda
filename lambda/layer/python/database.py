@@ -55,6 +55,7 @@ class Database:
                 result = cursor.rowcount
                 self.connection.commit()
             except:
+                print('update db 出現錯誤')
                 result = 'ERROR'
         return result
 

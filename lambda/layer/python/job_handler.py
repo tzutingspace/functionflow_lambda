@@ -45,13 +45,17 @@ def replace_customize_variables(config, body):
     pattern = r"{{(.*?)}}"
     matches = re.findall(pattern, config)
     results = matches if matches else []
+    print('results', results)
     for result in results:
         _, job_name, result_name = result.split(".")
         try:
-            result_output = json.loads(
-                body["steps"][job_name]["result_output"])
+            print(body["steps"], job_name, result_name)
+            # result_output = json.loads(
+            #     body["steps"][job_name]["result_output"])
+            result_output = body["steps"][job_name]["result_output"]
             result_variable = result_output[result_name]
         except:
             result_variable = 'undefined'
-        config = config.replace("{{" + result + "}}", result_variable)
+        print(result_variable)
+        config = config.replace("{{" + result + "}}", str(result_variable))
     return config

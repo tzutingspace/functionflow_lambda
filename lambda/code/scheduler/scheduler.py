@@ -63,12 +63,17 @@ def lambda_handler(event, context):
             print(f'>>該 workflow 有 {len(job_details)} 筆Job')
         with connection.cursor() as cursor:
             QUEUE_OBJ['steps'] = {}
+            QUEUE_OBJ["ready_execute_job"] = []
             job_instance_id = None
             # 建立 jobs_instances
             for job in job_details:
                 print(f'>>>> 建立job_instances{job}')
                 job['status'] = 'waiting'
                 job['depends_job_instance_id'] = job_instance_id
+                job['start_time'] = ""
+                job['end_time'] = ""
+                job['result_output'] = {}
+                QUEUE_OBJ["ready_execute_job"].append(job["name"])
                 if job['sequence'] == 1:
                     QUEUE_OBJ['step_now'] = job['name']
                 sql = f"INSERT INTO jobs_instances (workflow_instance_id, name, status, \
@@ -76,9 +81,10 @@ def lambda_handler(event, context):
                     VALUES ({work_flow['wf_instance_id']}, %(name)s, %(status)s,  %(sequence)s, \
                     %(config_input)s, %(config_output)s, %(depends_job_instance_id)s)"
                 cursor.execute(sql, job)
+                job_instance_id = cursor.lastrowid
+                job["id"] = job_instance_id
                 job_name = job['name']
                 QUEUE_OBJ['steps'][job_name] = job
-                job_instance_id = cursor.lastrowid
             connection.commit()
         # 加入queue中
         res = put_to_sqs(QUEUE_OBJ, 'jobsQueue')

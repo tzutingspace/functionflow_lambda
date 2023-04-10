@@ -93,7 +93,7 @@ class FunctionflowCdkStack(Stack):
         get_weather_queue = sqs.Queue(
             self, "getWeatherQueue", queue_name='getWeatherQueue')
         send_message_queue = sqs.Queue(
-            self, "sendMessageQueue", queue_name='sendMessageQueue')
+            self, "sendMessageDiscordQueue", queue_name='sendMessageDiscordQueue')
 
         # Defines an AWS Lambda Layer
         lambdaLayer = _lambda.LayerVersion(
@@ -113,6 +113,7 @@ class FunctionflowCdkStack(Stack):
             handler='scheduler.lambda_handler',
             layers=[lambdaLayer],
             role=existing_role,
+            timeout=Duration.seconds(30),
             environment={
                 'AWS_REGION_NAME': AWS_REGION_NAME.value_as_string,
                 'MYSQL_HOST': MYSQL_HOST.value_as_string,
@@ -132,6 +133,7 @@ class FunctionflowCdkStack(Stack):
             handler='executer.lambda_handler',
             layers=[lambdaLayer],
             role=existing_role,
+            timeout=Duration.seconds(30),
             environment={
                 'AWS_REGION_NAME': AWS_REGION_NAME.value_as_string,
                 'MYSQL_HOST': MYSQL_HOST.value_as_string,
@@ -152,6 +154,7 @@ class FunctionflowCdkStack(Stack):
             handler='get_weather.lambda_handler',
             layers=[lambdaLayer],
             role=existing_role,
+            timeout=Duration.seconds(30),
             environment={
                 'AWS_REGION_NAME': AWS_REGION_NAME.value_as_string,
                 'MYSQL_HOST': MYSQL_HOST.value_as_string,
@@ -173,7 +176,7 @@ class FunctionflowCdkStack(Stack):
             handler='send_message.lambda_handler',
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(3600),
+            timeout=Duration.seconds(30),
             environment={
                 'AWS_REGION_NAME': AWS_REGION_NAME.value_as_string,
                 'MYSQL_HOST': MYSQL_HOST.value_as_string,
