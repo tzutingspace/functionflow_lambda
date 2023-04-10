@@ -1,11 +1,12 @@
-from put_to_sqs import put_to_sqs
-from database import Database
-import os
-from datetime import datetime, timezone, timedelta
 import json
+import os
+from datetime import datetime, timedelta, timezone
+
+import boto3
 import pymysql
 from botocore.exceptions import ClientError
-import boto3
+from database import Database
+from put_to_sqs import put_to_sqs
 
 
 def lambda_handler(event, context):
@@ -52,7 +53,7 @@ def lambda_handler(event, context):
 
             # ## 取得該筆 workflow 所有的jobs
             sql = f'SELECT jobs.id, jobs.name, jobs.sequence, jobs.depends_job_id, jobs.config_input, jobs.config_output,\
-                    jobs.next_job_number, `functions`.name as function_name, `functions`.id as function_id \
+                    `functions`.name as function_name, `functions`.id as function_id \
                     FROM `jobs` INNER JOIN `functions` ON jobs.function_id = `functions`.id WHERE workflow_id = %(id)s ORDER BY sequence'
             cursor.execute(sql, work_flow)
 
@@ -71,9 +72,9 @@ def lambda_handler(event, context):
                 if job['sequence'] == 1:
                     QUEUE_OBJ['step_now'] = job['name']
                 sql = f"INSERT INTO jobs_instances (workflow_instance_id, name, status, \
-                    sequence, funciton_id, config_input, config_output, next_job_number, depends_job_instance_id) \
-                    VALUES ({work_flow['wf_instance_id']}, %(name)s, %(status)s,  %(sequence)s, %(function_id)s, %(config_input)s, %(config_output)s, \
-                    %(next_job_number)s, %(depends_job_instance_id)s)"
+                    sequence, config_input, config_output, depends_job_instance_id) \
+                    VALUES ({work_flow['wf_instance_id']}, %(name)s, %(status)s,  %(sequence)s, \
+                    %(config_input)s, %(config_output)s, %(depends_job_instance_id)s)"
                 cursor.execute(sql, job)
                 job_name = job['name']
                 QUEUE_OBJ['steps'][job_name] = job
