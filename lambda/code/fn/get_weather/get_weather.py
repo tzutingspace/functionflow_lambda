@@ -1,24 +1,22 @@
 import json
 import os
-from datetime import datetime, timedelta, timezone
 
 import requests
+from job_handler import (get_job_info_and_init, update_body, update_job_info)
 from put_to_sqs import put_to_sqs
-from update_db_job_status import update_db_job_status
-from update_db_job_status import get_now_time
 
 
-def get_weather(job_info):
+def get_weather(city, elementName):
     url = 'https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001'
     headers = {'user-agent': 'Mozilla/5.0'}
     params = {
         'Authorization': os.getenv("OPENAPIKEY"),
         'format': 'JSON',
-        'locationName': job_info['config']['city'],
+        'locationName': city,
         'sort': 'time',
         'limit': 1,
         'offset': 0,
-        'elementName': 'MinT,MaxT'
+        'elementName': elementName
     }
     response = requests.get(url, params=params, headers=headers)
     if response.status_code != 200 or response.headers['Content-Type'] != 'application/json;charset=utf-8':
@@ -28,18 +26,17 @@ def get_weather(job_info):
     if len(data['records']['location']) == 0:
         print('此筆天氣資料為空', data['records'])
         return False
-    weatherElement = data['records']['location'][0]['weatherElement']
-    return weatherElement
+    weather_element_value = data["records"]["location"][0]["weatherElement"][0]
+    return weather_element_value
 
 
-def check_condition(weatherstatuses, job_info):
-    condition, setting_temp = job_info['config']["condition"].split(",")
-    setting_temp = int(setting_temp)
-    for element in weatherstatuses:
-        if element['elementName'] == condition:
-            forecasttemp = int(element['time'][0]
-                               ['parameter']['parameterName'])
-            break
+def parse_weather_temp(weatherstatus):
+    return {"temperature": int(weatherstatus["time"][0]["parameter"]["parameterName"])}
+
+
+def check_condition_temp(forecasttemp, job_config_input):
+    condition, setting_temp = job_config_input["condition"], int(
+        job_config_input["temperature"])
     if (condition == 'MinT' and forecasttemp <= setting_temp) or (condition == 'MaxT' and forecasttemp >= setting_temp):
         print(
             f"通知用戶, 條件: {condition}, 目前溫度: {forecasttemp}, 提醒溫度: {setting_temp}")
@@ -51,29 +48,24 @@ def check_condition(weatherstatuses, job_info):
 
 
 def lambda_handler(event, context):
-    print('開始EVENT', event)
-    start_time = get_now_time()
-    body = json.loads(event['Records'][0]['body'])
-    job_info = body['transfer_job_info']
-    job_info['config'] = json.loads(body['transfer_job_info']['config'])
-    job_info['start_time'] = start_time
+    body = json.loads(event["Records"][0]["body"])
+    job_info = get_job_info_and_init(body)
+    job_config_input = json.loads(job_info["config_input"])
 
-    # 取得天氣資訊
-    weatherstatuses = get_weather(job_info)
-
-    # 取得天氣失敗
-    if not weatherstatuses:
-        job_info['job_run_status'] = 'Failed'
-
-    # 取得天氣成功
+    # lambda 獨特性
+    city = job_config_input["city"]
+    elementName = job_config_input["condition"]
+    weatherstatus = get_weather(city, elementName)
+    if not weatherstatus:
+        job_info['status'] = 'Failed'
+        results_output = {"temperature": "Error"}
     else:
-        result = check_condition(weatherstatuses, job_info)
-        # 確認是否達通知標準
-        if not result:
-            job_info['job_run_status'] = 'unfulfilled'
-        else:
-            job_info['job_run_status'] = 'scucess'
-    # 更新DB資訊
-    body['transfer_job_info'] = update_db_job_status(job_info)
-    # 寫回queue
+        results_output = parse_weather_temp(weatherstatus)
+        threshold_result = check_condition_temp(
+            results_output["temperature"], job_config_input)
+        job_info["status"] = "success" if threshold_result else "unfulfilled"
+
+    job_info = update_job_info(job_info, results_output)
+    body = update_body(body, job_info)
     put_to_sqs(body, 'jobsQueue')
+    return {"msg": "Finish"}
