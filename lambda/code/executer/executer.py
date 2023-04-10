@@ -7,111 +7,107 @@ import pymysql
 from database import Database
 from put_to_sqs import put_to_sqs
 from update_db_job_status import update_db_job_status
+from update_db_job_status import get_now_time
 
 
-def set_workflow_instance_success(body):
-    connection = Database().connection
-    with connection.cursor() as cursor:
-        sql = f"UPDATE workflows_instances SET workflows_instance_state = 'success' WHERE id = %s"
-        cursor.execute(sql, (body['wf_instance_id']))
-        result = cursor.rowcount
+def update_workflow_instance(body):
+    connDB = Database()
+    sql = f'UPDATE workflows_instances SET status = %s, start_time=%s, end_time=%s WHERE id = %s'
+    id = body["workflow"]["wf_instance_id"]
+    status = body["workflow"]["status"]
+    start_time = body["workflow"]["start_time"]
+    end_time = get_now_time()
+    result = connDB.update(sql, (status, start_time, end_time, id))
     if result == 0:
-        print(f'未更新成功， 請確認{ body["wf_instance_id"]} workflow 狀況')
-    connection.commit()
-    connection.close()
-
-
-def set_workflow_instance_failed(body):
-    connection = Database().connection
-    with connection.cursor() as cursor:
-        sql = f"UPDATE workflows_instances SET workflows_instance_state = 'Failed' WHERE id = %s"
-        cursor.execute(sql, (body['wf_instance_id']))
-        result = cursor.rowcount
-    if result == 0:
-        print(f'未更新成功， 請確認{ body["wf_instance_id"]} workflow 狀況')
-    connection.commit()
-    connection.close()
+        print(f'未更新成功， 請確認workflow_instance id = {id} 狀況')
+    connDB.close()
+    return result
 
 
 def update_workflow_next_execute_time(body):
-    connection = Database().connection
-    with connection.cursor() as cursor:
-        sql = f"SELECT * FROM workflows WHERE id = %s"
-        cursor.execute(sql, (body['id']))
-        workflow_details = [dict((cursor.description[i][0], value)
-                                 for i, value in enumerate(row)) for row in cursor.fetchall()][0]
-        # 處理下次時間
-        interval = timedelta(minutes=int(
-            workflow_details['trigger_interval_minutes']))
-        execute_time = workflow_details['next_execute_time']
-        next_time = (execute_time + interval).strftime('%Y-%m-%d %H:%M:%S')
-
-        sql = f"UPDATE workflows SET next_execute_time = %s WHERE id = %s"
-        cursor.execute(sql, (next_time, body['id']))
-    connection.commit()
-    connection.close()
-
-
-def get_jobs(body):
-    wf_instance_id = body['wf_instance_id']
-    connection = Database().connection
-    with connection.cursor() as cursor:
-        sql = f"SELECT\
-                jbi.id as job_instance_id,\
-                jbi.job_name,\
-                jbi.funciton_id,\
-                jbi.function_name,\
-                jbi.config,\
-                jbi.workflow_instance_id,\
-                jbi.job_run_status,\
-                jbi.job_priority\
-              FROM workflows_instances as wfi\
-              INNER JOIN jobs_instances as jbi ON wfi.id = jbi.workflow_instance_id\
-              WHERE\
-                wfi.id = %s\
-                AND jbi.job_run_status = 'waiting'\
-              ORDER BY job_priority"
-        cursor.execute(sql, (wf_instance_id))
-        job_details = [dict((cursor.description[i][0], value)
-                            for i, value in enumerate(row)) for row in cursor.fetchall()]
-    connection.close()
-    return job_details
+    # 防止job執行的期間，更動workflow設定，至RDS重新獲取資料
+    connDB = Database()
+    sql = f"SELECT id, next_execute_time, trigger_interval_seconds FROM workflows WHERE id = %s"
+    workflow_details = connDB.queryall(sql, (body["workflow"]["id"]))[0]
+    # 處理下次時間
+    interval = timedelta(seconds=int(
+        workflow_details["trigger_interval_seconds"]))
+    execute_time = workflow_details["next_execute_time"]
+    next_time = (execute_time + interval).strftime('%Y-%m-%d %H:%M:%S')
+    sql = f"UPDATE workflows SET next_execute_time = %s WHERE id = %s"
+    result = connDB.update(sql, (next_time, (body["workflow"]["id"])))
+    if result == 0:
+        print(f'未更新成功， 請確認workflow id = {body["workflow"]["id"]} 狀況')
+    connDB.close()
+    return result
 
 
-def executer(body, job_details):
-    if len(job_details) == 0:
-        print('無等待工作事項, 更新 wf 狀態即可( 下次時間 & instance 成功)')
-        set_workflow_instance_success(body)
-        update_workflow_next_execute_time(body)
-        return False
-    if body.get('transfer_job_info'):
-        upstream_result = body['transfer_job_info']['job_run_status']
-        print('判斷上一個job結果')
-        if upstream_result != 'scucess':
-            print('停止queue')
-            # 更新workflow_instance failed
-            set_workflow_instance_failed(body)
-            update_workflow_next_execute_time(body)
-            # 更新所以後續 job instance > skipped
-            for job_detail in job_details:
-                job_detail['job_run_status'] = 'skipped'
-                job_detail['start_time'] = None
-                job_detail['end_time'] = None
-                update_db_job_status(job_detail)
-            return False
+def update_job_instances(body):
+    connDB = Database()
+    sql = f"UPDATE jobs_instances SET status=%s, start_time=%s, \
+                end_time=%s, result_input=%s, result_output=%s WHERE id=%s"
 
-    # 將下一個任務放的queue
-    job_details[0]['job_run_status'] = 'queued'
-    body['transfer_job_info'] = job_details[0]
-    print('queue name', job_details[0]['function_name'] + 'Queue')
-    put_to_sqs(body, job_details[0]['function_name'] + 'Queue')
-    return True
+    jobs = body["steps"]
+    params = [(jobs[jobi]["status"], jobs[jobi]["start_time"], jobs[jobi]["end_time"],
+               jobs[jobi]["result_input"], jobs[jobi]["result_output"], jobs[jobi]["id"]) for jobi in jobs.keys()]
+    result = connDB.update(sql, params, many=True)
+    if result != len(body["steps"].keys()):
+        print(f'未全部更新成功， 請確認job id = {[(job[5]) for job in params]} 狀況')
+    connDB.close()
+    return result
+
+# 主要邏輯
 
 
 def lambda_handler(event, context):
     print('Start EVENT', event)
-    body = json.loads(event['Records'][0]['body'])
-    print('Boby', body)
-    job_details = get_jobs(body)
-    result = executer(body, job_details)
-    return result
+    body = json.loads(event["Records"][0]["body"])
+    current_job_name = body["step_now"]
+    current_job_details = body["steps"][current_job_name]
+
+    # current Job == waiting 表示剛進到executer >> 直接分配job
+    if current_job_details["status"] == "waiting":
+        body["workflow"]["start_time"] = get_now_time()
+        put_to_sqs(body, current_job_details["function_name"])
+        print(f'第一個job, 已放進放進SQS')
+        return {"msg": "第一個job, 已放進放進SQS"}
+
+    # current Job == success 表示剛完成上一個作業 >> 確認是否有下一個工作 >> 紀綠 >> 變更
+    body["ready_execute_job"].remove(current_job_name)
+    if current_job_details["status"] == "success":
+        # next_job == 1 -> SQS
+        if current_job_details["next_job_number"] == 1:
+            for job in body["ready_execute_job"]:
+                if body["steps"][job]["sequence"] == (int(current_job_details["sequence"]) + 1):
+                    next_job_name = body["steps"][job]["name"]
+                    body["step_now"] = next_job_name
+                    # put_to_sqs(body, body["steps"][next_job_name]["function_name"])
+                    print(f"下一個工作, 已放進放進SQS")
+                    return {"msg": "下一個工作, 已放進放進SQS"}
+        # TODO:next_job > 1 -> 判斷要放哪一個job 進SQS
+
+        # next_job == 0 -> 結束
+        if current_job_details["next_job_number"] == 0:
+            body["workflow"]["status"] = "finished"
+            print(f"完成所有jobs")
+
+    # failed... 表示job 發生錯誤 >> 更新 waiting 的job 都要更新為upstream_failed
+    elif current_job_details["status"] == "failed":
+        for job in body["ready_execute_job"]:
+            body["steps"][job]["status"] = "upstream_failed"
+            body["workflow"]["status"] = "failed"
+    # unfulfilled... 表示job 發生未達設定標準 >> 下面的job 都要更新為upstream_unfulfilled
+    elif current_job_details["status"] == "unfulfilled":
+        for job in body["ready_execute_job"]:
+            body["steps"][job]["status"] = "upstream_unfulfilled"
+            body["workflow"]["status"] = "finished"
+
+    # 依據body中內容，更新DB資料
+    # 更新 workflow instance 狀態
+    update_workflow_instance(body)
+    # 更新 workflow 下次時間
+    update_workflow_next_execute_time(body)
+    # 更新 jobs 本次紀錄
+    update_job_instances(body)
+    print("workflow已結束")
+    return {"msg": "workflow已結束"}
