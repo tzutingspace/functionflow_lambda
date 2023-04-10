@@ -1,11 +1,12 @@
 from datetime import datetime, timezone, timedelta
 from database import Database
+from job_handler import get_now_time
 
 
-def get_now_time():
-    dt0 = datetime.utcnow().replace(tzinfo=timezone.utc)
-    return dt0.astimezone(
-        timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')
+# def get_now_time():
+#     dt0 = datetime.utcnow().replace(tzinfo=timezone.utc)
+#     return dt0.astimezone(
+#         timezone(timedelta(hours=8))).strftime('%Y-%m-%d %H:%M:%S')
 
 
 def update_db_job_status(job_info):
