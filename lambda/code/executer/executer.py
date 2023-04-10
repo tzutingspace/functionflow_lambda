@@ -5,9 +5,8 @@ from datetime import datetime, timedelta, timezone
 
 import pymysql
 from database import Database
+from job_handler import get_now_time
 from put_to_sqs import put_to_sqs
-from update_db_job_status import update_db_job_status
-from update_db_job_status import get_now_time
 
 
 def update_workflow_instance(body):
@@ -15,7 +14,7 @@ def update_workflow_instance(body):
     sql = f'UPDATE workflows_instances SET status = %s, start_time=%s, end_time=%s WHERE id = %s'
     id = body["workflow"]["wf_instance_id"]
     status = body["workflow"]["status"]
-    start_time = body["workflow"]["start_time"]
+    start_time = body["workflow"]["execution_time"]
     end_time = get_now_time()
     result = connDB.update(sql, (status, start_time, end_time, id))
     if result == 0:
@@ -75,21 +74,24 @@ def lambda_handler(event, context):
     # current Job == success 表示剛完成上一個作業 >> 確認是否有下一個工作 >> 紀綠 >> 變更
     body["ready_execute_job"].remove(current_job_name)
     if current_job_details["status"] == "success":
-        # next_job == 1 -> SQS
-        if current_job_details["next_job_number"] == 1:
-            for job in body["ready_execute_job"]:
-                if body["steps"][job]["sequence"] == (int(current_job_details["sequence"]) + 1):
-                    next_job_name = body["steps"][job]["name"]
-                    body["step_now"] = next_job_name
-                    # put_to_sqs(body, body["steps"][next_job_name]["function_name"])
-                    print(f"下一個工作, 已放進放進SQS")
-                    return {"msg": "下一個工作, 已放進放進SQS"}
-        # TODO:next_job > 1 -> 判斷要放哪一個job 進SQS
+        standby_job = []
+        for job in body["ready_execute_job"]:
+            if body["steps"][job]["sequence"] == (int(current_job_details["sequence"]) + 1):
+                standby_job.append(body["steps"][job]["name"])
 
-        # next_job == 0 -> 結束
-        if current_job_details["next_job_number"] == 0:
+        # next_job == 1 -> SQS
+        if len(standby_job) == 1:
+            next_job_name = standby_job[0]
+            body["step_now"] = standby_job[0]
+            print(f"下一個工作, 已放進放進SQS")
+            put_to_sqs(body, body["steps"][next_job_name]["function_name"])
+            return {"msg": "下一個工作, 已放進放進SQS"}
+        elif len(standby_job) == 0:
             body["workflow"]["status"] = "finished"
             print(f"完成所有jobs")
+        # TODO:next_job > 1 -> 判斷要放哪一個job 進SQS
+        else:
+            print(f'next jobs > 1 , 請處理')
 
     # failed... 表示job 發生錯誤 >> 更新 waiting 的job 都要更新為upstream_failed
     elif current_job_details["status"] == "failed":
@@ -101,7 +103,8 @@ def lambda_handler(event, context):
         for job in body["ready_execute_job"]:
             body["steps"][job]["status"] = "upstream_unfulfilled"
             body["workflow"]["status"] = "finished"
-
+    else:
+        print(f'job_instances出現未設定的狀態 , 請處理')
     # 依據body中內容，更新DB資料
     # 更新 workflow instance 狀態
     update_workflow_instance(body)
