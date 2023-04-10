@@ -1,6 +1,7 @@
 from constructs import Construct
 from aws_cdk.aws_lambda_event_sources import SqsEventSource
-from aws_cdk import aws_sqs as sqs  # Duration,
+from aws_cdk import aws_sqs as sqs
+from aws_cdk import Duration
 from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_iam as iam
 from aws_cdk import CfnOutput, Stack
@@ -172,6 +173,7 @@ class FunctionflowCdkStack(Stack):
             handler='send_message.lambda_handler',
             layers=[lambdaLayer],
             role=existing_role,
+            timeout=Duration.seconds(3600),
             environment={
                 'AWS_REGION_NAME': AWS_REGION_NAME.value_as_string,
                 'MYSQL_HOST': MYSQL_HOST.value_as_string,

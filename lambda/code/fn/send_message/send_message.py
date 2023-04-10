@@ -1,11 +1,11 @@
 import json
 import os
-from datetime import datetime, timedelta, timezone
 
 import requests
+from job_handler import (get_job_info_and_init, get_now_time, parseString,
+                         replace_customize_variables, update_body,
+                         update_job_info)
 from put_to_sqs import put_to_sqs
-from update_db_job_status import update_db_job_status
-from update_db_job_status import get_now_time
 
 
 def send_discord_message(user_channel_ID, user_message):
@@ -16,32 +16,32 @@ def send_discord_message(user_channel_ID, user_message):
     if res.status_code != 200:
         print(
             f'Error: An error occurred while creating a Discord message in the {user_channel_ID} channel.')
+        print(f'Error Message: {res.json()}')
         return False
     else:
-        print('寄出成功', res.json())
+        print(f'成功送出Message')
         return True
 
 
 def lambda_handler(event, content):
-    print('開始EVENT', event)
-    start_time = get_now_time()
-    body = json.loads(event['Records'][0]['body'])
-    job_info = body['transfer_job_info']
-    job_info['config'] = json.loads(body['transfer_job_info']['config'])
-    job_info['start_time'] = start_time
+    print(f'event{event}')
+    body = json.loads(event["Records"][0]["body"])
+    job_info = get_job_info_and_init(body)
+    job_config_input = parseString(job_info["config_input"])
 
-    user_channel_ID = job_info['config']['user_channel_ID']
-    user_message = job_info['config']['user_message']
-    result = send_discord_message(user_channel_ID, user_message)
-
-    if not result:
-        job_info['job_run_status'] = 'Failed'
+    # lambda 獨特
+    user_channel_ID = job_config_input['channel']
+    user_message = job_config_input['message']
+    send_message = replace_customize_variables(user_message, body)
+    send_result = send_discord_message(user_channel_ID, send_message)
+    if not send_result:
+        job_info['status'] = 'Failed'
+        results_output = {"success": False}
     else:
-        job_info['job_run_status'] = 'scucess'
+        job_info["status"] = "success"
+        results_output = {"success": True}
 
-    # 更新DB資訊
-    body['transfer_job_info'] = update_db_job_status(job_info)
-    # 寫回queue
+    job_info = update_job_info(job_info, results_output)
+    body = update_body(body, job_info)
     put_to_sqs(body, 'jobsQueue')
-
-    return result
+    return {"msg": "Finish"}

@@ -1,0 +1,20 @@
+{
+  "Records": [
+    {
+      "messageId": "19dd0b57-b21e-4ac1-bd88-01bbb068cb78",
+      "receiptHandle": "MessageReceiptHandle",
+      "body": "{\"workflow\":{\"id\":1,\"name\":\"ting's 的天氣通知\",\"trigger_type\":\"scheduled\",\"next_execute_time\":\"2023-04-09 16:40:31\",\"status\":\"queued\",\"execution_time\":\"2023-04-09 16:39:37\",\"wf_instance_id\":7},\"step_now\":\"send_message_discord\",\"steps\":{\"get_weather_temp\":{\"id\":1,\"name\":\"get_weather_temp\",\"sequence\":1,\"depends_job_id\":null,\"config_input\":\"{\\\"city\\\": \\\"澎湖縣\\\", \\\"temperature\\\": \\\"20\\\", \\\"condition\\\": \\\"MinT\\\"}\",\"config_output\":\"[{\\\"name\\\": \\\"temperature\\\", \\\"type\\\": \\\"int\\\"}]\",\"next_job_number\":1,\"function_name\":\"getWeather\",\"function_id\":2,\"status\":\"wating\",\"start_time\":\"2023-04-09 16:39:37\",\"end_time\":\"2023-04-09 16:39:37\",\"result_output\":\"{\\\"temperature\\\":\\\"30\\\"}\",\"result_input\":\"{\\\"city\\\": \\\"澎湖縣\\\", \\\"temperature\\\": \\\"20\\\", \\\"condition\\\": \\\"MinT\\\"}\"},\"send_message_discord\":{\"id\":2,\"name\":\"send_message_discord\",\"sequence\":2,\"depends_job_id\":1,\"config_input\":\"{\\\"app\\\": \\\"Discord\\\", \\\"channel\\\": \\\"1091690518016163842\\\", \\\"message\\\": \\\"今日天氣溫度為{{steps.get_weather_temp.temperature}}，請記得補充水分\\\"}\",\"config_output\":\"[{\\\"name\\\": \\\"success\\\", \\\"type\\\": \\\"bool\\\"}]\",\"next_job_number\":0,\"function_name\":\"sendMessageDiscord\",\"function_id\":1,\"status\":\"waiting\",\"start_time\":null,\"end_time\":null,\"result_output\":null,\"result_input\":null}}}",
+      "attributes": {
+        "ApproximateReceiveCount": "1",
+        "SentTimestamp": "1523232000000",
+        "SenderId": "123456789012",
+        "ApproximateFirstReceiveTimestamp": "1523232000001"
+      },
+      "messageAttributes": {},
+      "md5OfBody": "7b270e59b47ff90a553787216d55d91d",
+      "eventSource": "aws:sqs",
+      "eventSourceARN": "arn:aws:sqs:us-east-1:123456789012:MyQueue",
+      "awsRegion": "us-east-1"
+    }
+  ]
+}
