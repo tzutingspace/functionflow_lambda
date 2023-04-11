@@ -45,16 +45,16 @@ def replace_customize_variables(config, body):
     pattern = r"{{(.*?)}}"
     matches = re.findall(pattern, config)
     results = matches if matches else []
-    print("results", results)
+    # print("results", results)
     for result in results:
         _, job_name, result_name = result.split(".")
         try:
-            print(body["steps"], job_name, result_name)
+            # print(body["steps"], job_name, result_name)
             result_output = body["steps"][job_name]["result_output"]
             result_variable = result_output[result_name]
         except KeyError as e:
             MyErrorHandler().handle_error("KeyError", str(e))
             result_variable = "undefined"
-        print(result_variable)
+        # print(result_variable)
         config = config.replace("{{" + result + "}}", str(result_variable))
     return config

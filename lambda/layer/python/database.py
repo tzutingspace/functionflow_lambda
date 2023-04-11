@@ -49,7 +49,7 @@ class Database:
 
     def update(self, sql, params=None, many=None):
         with self.connection.cursor() as cursor:
-            print("sql:", sql, "params:", params)
+            # print("sql:", sql, "params:", params)
             try:
                 if params:
                     if many:
