@@ -51,7 +51,7 @@ def update_job_instances(body):
             jobs[jobi]["status"],
             jobs[jobi]["start_time"],
             jobs[jobi]["end_time"],
-            jobs[jobi]["result_output"],
+            json.dumps(jobs[jobi]["result_output"]),
             jobs[jobi]["id"],
         )
         for jobi in jobs.keys()
