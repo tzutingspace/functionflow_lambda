@@ -33,7 +33,8 @@ def lambda_handler(event, content):
     user_channel_ID = job_config_input['channel']
     user_message = job_config_input['message']
     send_message = replace_customize_variables(user_message, body)
-    send_result = send_discord_message(user_channel_ID, send_message)
+    send_result = send_discord_message(
+        user_channel_ID, send_message)
     if not send_result:
         job_info['status'] = 'Failed'
         results_output = {"success": False}
