@@ -1,5 +1,6 @@
 import json
 from datetime import timedelta
+from dateutil.relativedelta import relativedelta
 
 from database import Database
 from job_handler import get_now_time
@@ -26,9 +27,16 @@ def update_workflow_next_execute_time(body):
     sql = "SELECT id, next_execute_time, trigger_interval_seconds FROM workflows WHERE id = %s"
     workflow_details = connDB.queryall(sql, (body["workflow"]["id"]))[0]
     # 處理下次時間
+    # FIXME: 處理如果是monthly的話, 應該要加判斷; 待確認狀況
+    # https://statisticsglobe.com/add-days-months-years-datetime-object-python
     interval = timedelta(seconds=int(workflow_details["trigger_interval_seconds"]))
     execute_time = workflow_details["next_execute_time"]
-    next_time = (execute_time + interval).strftime("%Y-%m-%d %H:%M:%S")
+    if int(workflow_details["trigger_interval_seconds"]) == 2592000:
+        next_time = execute_time + relativedelta(months=1)
+        next_time = next_time.strftime("%Y-%m-%d %H:%M:%S")
+    else:
+        next_time = (execute_time + interval).strftime("%Y-%m-%d %H:%M:%S")
+    # 更新資料庫資料
     sql = "UPDATE workflows SET next_execute_time = %s WHERE id = %s"
     result = connDB.update(sql, (next_time, (body["workflow"]["id"])))
     workflow_instance_id = body["workflow"]["id"]
