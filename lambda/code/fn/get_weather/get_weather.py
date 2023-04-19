@@ -2,8 +2,9 @@ import json
 import os
 
 import requests
-from job_handler import get_job_info_and_init, update_body, update_job_info
-from put_to_sqs import put_to_sqs
+
+# from job_handler import get_job_info_and_init, update_body, update_job_info
+# from put_to_sqs import put_to_sqs
 
 
 def get_weather(city, elementName):
@@ -33,18 +34,6 @@ def get_weather(city, elementName):
 
 def parse_weather_temp(weatherstatus):
     return {"temperature": int(weatherstatus["time"][0]["parameter"]["parameterName"])}
-
-
-def check_condition_temp(forecasttemp, job_config_input):
-    condition, setting_temp = job_config_input["condition"], int(job_config_input["temperature"])
-    if (condition == "MinT" and forecasttemp <= setting_temp) or (
-        condition == "MaxT" and forecasttemp >= setting_temp
-    ):
-        print(f"通知用戶, 條件: {condition}, 目前溫度: {forecasttemp}, 提醒溫度: {setting_temp}")
-        return True
-    else:
-        print(f"不符合條件, 條件: {condition}, 目前溫度: {forecasttemp}, 提醒溫度: {setting_temp}")
-        return False
 
 
 def lambda_handler(event, context):

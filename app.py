@@ -7,7 +7,10 @@ from functionflow_cdk.functionflow_cdk_stack import FunctionflowCdkStack
 
 
 app = cdk.App()
-FunctionflowCdkStack(app, "FunctionflowCdkStack", )
+FunctionflowCdkStack(
+    app,
+    "FunctionflowCdkStack",
+)
 
 app.synth()
 

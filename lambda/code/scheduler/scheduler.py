@@ -2,9 +2,9 @@ import os
 from datetime import datetime, timedelta, timezone
 
 from database import Database
-from job_handler import Job
-from job_handler import Workflow
-from job_handler import QueueObj
+from Job import Job
+from QueueObj import QueueObj
+from Workflow import Workflow
 
 
 def lambda_handler(event, context):
