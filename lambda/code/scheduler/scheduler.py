@@ -52,7 +52,7 @@ def lambda_handler(event, context):
         queue_obj.init_workflow(vars(workflow_obj))
 
         # 取得該筆 workflow 所有的jobs
-        jobs_detail = workflow_obj.get_jobs(db)
+        jobs_detail = workflow_obj.get_jobs_from_db(db)
         prev_job_instance_id = None
 
         print(f">>該 workflow 有 {len(jobs_detail)} 筆Job")
