@@ -2,9 +2,9 @@ import json
 import os
 
 import requests
-
-# from job_handler import get_job_info_and_init, update_body, update_job_info
-# from put_to_sqs import put_to_sqs
+from Job import Job
+from job_handler import parseString
+from QueueObj import QueueObj
 
 
 def get_weather(city, elementName):
@@ -37,23 +37,34 @@ def parse_weather_temp(weatherstatus):
 
 
 def lambda_handler(event, context):
+    # 每個function 都要做的事
     body = json.loads(event["Records"][0]["body"])
-    job_info = get_job_info_and_init(body)
-    job_config_input = json.loads(job_info["config_input"])
+    print(f"來源內容{body}")
+    queue_obj = QueueObj(None, body)
+    current_job = Job(queue_obj.steps[queue_obj.step_now])
+    current_job.update_start_time()  # 更新開始時間
+    customer_input = current_job.parse_customer_input(queue_obj.steps)
 
-    # lambda 獨特性
-    city = job_config_input["city"]
-    elementName = job_config_input["condition"]
-    weatherstatus = get_weather(city, elementName)
+    # get_weather 獨特做的事
+    city = customer_input["city"]
+    condition = customer_input["condition"]
+    # temperature = customer_input["temperature"]
+    weatherstatus = get_weather(city, condition)
     if not weatherstatus:
-        job_info["status"] = "Failed"
-        results_output = {"temperature": "Error"}
+        job_status = "failed"
+        results_output = {}
+        for output in parseString(current_job.config_output):
+            results_output[output["name"]] = "Error"
     else:
+        job_status = "success"
         results_output = parse_weather_temp(weatherstatus)
-        threshold_result = check_condition_temp(results_output["temperature"], job_config_input)
-        job_info["status"] = "success" if threshold_result else "unfulfilled"
 
-    job_info = update_job_info(job_info, results_output)
-    body = update_body(body, job_info)
-    put_to_sqs(body, "jobsQueue")
-    return {"msg": "Finish"}
+    # 每個function 都要做的事
+    current_job.update_job_status(job_status)
+    current_job.update_result_output(results_output)
+    current_job.update_end_time()
+
+    queue_obj.update_job_status(current_job)
+    queue_obj.put_to_sqs()
+
+    return {"lambda msg": results_output}

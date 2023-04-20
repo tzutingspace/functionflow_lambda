@@ -31,6 +31,9 @@ class QueueObj:
     def change_step(self, job_instance):
         self.step_now = job_instance.get("name")
 
+    def update_job_status(self, job_instance):
+        self.steps[self.step_now] = vars(job_instance)
+
     def put_to_sqs(self, queue_name=None):
         print(f"預計加入sqs的內容: {json.dumps(vars(self))}")
 

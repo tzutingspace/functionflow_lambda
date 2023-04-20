@@ -1,7 +1,7 @@
-from job_handler import get_now_time
-from job_handler import parseString
-
-# import json
+import json
+import re
+from job_handler import get_now_time, parseString
+from error_handler import MyErrorHandler
 
 
 class Job:
@@ -26,7 +26,7 @@ class Job:
     def create_job_instance(self, wf_instance_id, depends_job_instance_id, connDB):
         self.depends_job_instance_id = depends_job_instance_id
         sql = """
-            INSERT INTO 
+            INSERT INTO
                 jobs_instances
                     (workflow_instance_id, name, status, sequence, customer_input, 
                     config_output, depends_job_instance_id, function_name)
@@ -48,6 +48,9 @@ class Job:
         self.id = insertId
         return insertId
 
+    def update_job_status(self, new_status):
+        self.status = new_status
+
     def update_start_time(self):
         self.start_time = get_now_time()
 
@@ -56,10 +59,34 @@ class Job:
 
     def update_result_output(self, results):
         self.result_output = {}
-        outputs = parseString(self.template_output)
+        outputs = parseString(self.config_output)
+        print(outputs)
         for output in outputs:
             output_name = output["name"]
             self.result_output[output_name] = results[output_name]
+        self.result_output = json.dumps(self.result_output)
+
+    def parse_customer_input(self, stepsInfo):
+        pattern = r"{{(.*?)}}"
+        matches = re.findall(pattern, self.customer_input)
+        config = self.customer_input  # string
+        results = matches if matches else []
+        print("parse results: ", results)
+        for result in results:
+            _, job_name, result_name = result.split(".")
+            try:
+                # result_output = json.loads(stepsInfo[job_name]["result_output"])
+                result_output = parseString(stepsInfo[job_name]["result_output"])
+                result_variable = result_output[result_name]
+            except TypeError as e:
+                MyErrorHandler("TypeError", f"@parse custom input: {e}")
+                result_variable = "undefined"
+            except KeyError as e:
+                MyErrorHandler("KeyError", f"@parse custom input: {e}")
+                result_variable = "undefined"
+            config = config.replace("{{" + result + "}}", str(result_variable))  # 取代string
+        # return json.loads(config)  # 解析成obj
+        return parseString(config)
 
     @staticmethod
     def updata_job_instances(connDB, queueObj):
