@@ -1,15 +1,10 @@
-import json
 import os
 
+import json
+
 import requests
-from job_handler import (
-    get_job_info_and_init,
-    parseString,
-    replace_customize_variables,
-    update_body,
-    update_job_info,
-)
-from put_to_sqs import put_to_sqs
+from Job import Job
+from QueueObj import QueueObj
 
 
 def send_discord_message(user_channel_ID, user_message):
@@ -26,26 +21,30 @@ def send_discord_message(user_channel_ID, user_message):
         return True
 
 
-def lambda_handler(event, content):
-    print("START EVENT", event)
+def lambda_handler(event, context):
+    # 每個function 都要做的事
     body = json.loads(event["Records"][0]["body"])
     print(f"來源內容{body}")
-    job_info = get_job_info_and_init(body)
-    job_config_input = parseString(job_info["config_input"])
+    queue_obj = QueueObj(None, body)
+    current_job = Job(queue_obj.steps[queue_obj.step_now])
+    current_job.update_start_time()  # 更新開始時間
+    customer_input = current_job.parse_customer_input(queue_obj.steps)
 
-    # lambda 獨特
-    user_channel_ID = job_config_input["channel"]
-    user_message = job_config_input["message"]
-    send_message = replace_customize_variables(user_message, body)
-    send_result = send_discord_message(user_channel_ID, send_message)
+    # lambda 獨特性
+    user_channel_ID = customer_input["channel"]
+    user_message = customer_input["message"]
+    send_result = send_discord_message(user_channel_ID, user_message)
     if not send_result:
-        job_info["status"] = "Failed"
+        job_status = "failed"
         results_output = {"success": False}
     else:
-        job_info["status"] = "success"
+        job_status = "success"
         results_output = {"success": True}
 
-    job_info = update_job_info(job_info, results_output)
-    body = update_body(body, job_info)
-    put_to_sqs(body, "jobsQueue")
-    return {"msg": "Finish"}
+    # 每個function 都要做的事
+    current_job.update_job_status(job_status)
+    current_job.update_result_output(results_output)
+    current_job.update_end_time()
+    queue_obj.update_job_status(current_job)
+    queue_obj.put_to_sqs()
+    {"lambda msg": results_output}

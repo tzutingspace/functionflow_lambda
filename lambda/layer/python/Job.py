@@ -79,10 +79,10 @@ class Job:
                 result_output = parseString(stepsInfo[job_name]["result_output"])
                 result_variable = result_output[result_name]
             except TypeError as e:
-                MyErrorHandler("TypeError", f"@parse custom input: {e}")
+                MyErrorHandler.handle_error("TypeError", f"@parse custom input: {e}")
                 result_variable = "undefined"
             except KeyError as e:
-                MyErrorHandler("KeyError", f"@parse custom input: {e}")
+                MyErrorHandler.handle_error("KeyError", f"@parse custom input: {e}")
                 result_variable = "undefined"
             config = config.replace("{{" + result + "}}", str(result_variable))  # 取代string
         # return json.loads(config)  # 解析成obj

@@ -29,7 +29,7 @@ class Database:
                     for row in cursor.fetchall()
                 ]
             except Exception as e:
-                MyErrorHandler().handle_error("Unexpected Error:", str(e))
+                MyErrorHandler.handle_error("Unexpected Error:", str(e))
                 result = "ERROR"
         return result
 
@@ -43,7 +43,7 @@ class Database:
                 self.connection.commit()
                 result = cursor.lastrowid
             except Exception as e:
-                MyErrorHandler().handle_error("Unexpected Error:", str(e))
+                MyErrorHandler.handle_error("Unexpected Error:", str(e))
                 result = "ERROR"
             return result
 
@@ -61,7 +61,7 @@ class Database:
                 result = cursor.rowcount
                 self.connection.commit()
             except Exception as e:
-                MyErrorHandler().handle_error("Unexpected Error:", str(e))
+                MyErrorHandler.handle_error("Unexpected Error:", str(e))
                 result = "ERROR"
         return result
 
