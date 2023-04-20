@@ -37,6 +37,7 @@ def parse_weather_temp(weatherstatus):
 
 
 def lambda_handler(event, context):
+    print("START EVENT", event)
     # 每個function 都要做的事
     body = json.loads(event["Records"][0]["body"])
     print(f"來源內容{body}")

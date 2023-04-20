@@ -28,6 +28,7 @@ conditions = {
 
 def lambda_handler(event, context):
     # 每個function 都要做的事
+    print("START EVENT", event)
     body = json.loads(event["Records"][0]["body"])
     print(f"來源內容{body}")
     queue_obj = QueueObj(None, body)

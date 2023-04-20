@@ -27,8 +27,9 @@ def send_discord_message(user_channel_ID, user_message):
 
 
 def lambda_handler(event, content):
-    print(f"event{event}")
+    print("START EVENT", event)
     body = json.loads(event["Records"][0]["body"])
+    print(f"來源內容{body}")
     job_info = get_job_info_and_init(body)
     job_config_input = parseString(job_info["config_input"])
 
