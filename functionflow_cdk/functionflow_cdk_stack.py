@@ -248,6 +248,11 @@ class FunctionflowCdkStack(Stack):
             timeout=Duration.seconds(30),
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
+                "MYSQL_HOST": MYSQL_HOST.value_as_string,
+                "MYSQL_USER": MYSQL_USER.value_as_string,
+                "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
+                "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
+                "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
                 "ENV": ENV.value_as_string,
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },

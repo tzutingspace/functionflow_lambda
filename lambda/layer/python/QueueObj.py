@@ -16,7 +16,7 @@ class QueueObj:
         self.workflow = queue_Info.get("workflow", {})
         self.steps = queue_Info.get("steps", {})
         self.step_now = queue_Info.get("step_now", None)
-        self.socket_id = queue_Info.get("socketId", None)
+        self.socket_id = queue_Info.get("socket_id", None)
 
     def init_workflow(self, workflow_instance):
         self.workflow = workflow_instance
@@ -125,9 +125,12 @@ class QueueObj:
         if self.workflow["manual_trigger"] == "t":
             print("!!!!! 通知使用者")
             print("socketId", self.socket_id)
-            data = {"socketId": self.socket_id, "data": "Manual trigger is finished."}
+            data = {"socketId": self.socket_id, "data": self.workflow["status"]}
+            headers = {"Content-Type": "application/json"}
             print("data", data)
-            res = requests.post("https://api.tingproject.link/triggerFinish", data=data)
+            res = requests.post(
+                "https://api.tingproject.link/triggerFinish", json=data, headers=headers
+            )
             print("通知 server 結果, 回覆:", res)
 
     def printQueue(self):
