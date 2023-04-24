@@ -28,10 +28,10 @@ class Job:
         sql = """
             INSERT INTO
                 jobs_instances
-                    (workflow_instance_id, name, status, sequence, customer_input, 
+                    (workflow_instance_id, name, status, sequence, customer_input,
                     config_output, depends_job_instance_id, function_name)
                 VALUES
-                    (%s, %s, %s, %s, %s, 
+                    (%s, %s, %s, %s, %s,
                     %s, %s, %s)
             """
         params = (
