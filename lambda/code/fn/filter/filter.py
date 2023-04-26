@@ -41,7 +41,7 @@ def lambda_handler(event, context):
     try:
         condition = customer_input["condition"]
         initial_value = int(customer_input["initial_value"])
-        second_value = int(customer_input["Second_value"])
+        second_value = int(customer_input["second_value"])
         result = conditions.get(condition, lambda x, y: False)(initial_value, second_value)
         print(f"本次filter情況 {initial_value} {condition} {second_value}")
     except ValueError as e:
