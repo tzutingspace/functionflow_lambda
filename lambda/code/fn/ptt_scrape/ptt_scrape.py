@@ -135,19 +135,15 @@ def lambda_handler(event, context):
         for output in parseString(current_job.config_output):
             results_output[output["name"]] = "Error"
             # 此 function 回覆 list
-        # FIXME: 需要回覆相同格式嗎？
-        results_output = [results_output]
 
     if len(result_obj_list) == 0:
         job_status = "unfulfilled"
         results_output = {}
         for output in parseString(current_job.config_output):
             results_output[output["name"]] = "undefined"
-        # FIXME: 需要回覆相同格式嗎？
-        results_output = [results_output]
     else:
         job_status = "success"
-        results_output = result_obj_list
+        results_output = {"result_list": result_obj_list}
 
     # 每個 function 都要做的事
     current_job.update_job_status(job_status)

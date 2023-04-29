@@ -17,6 +17,7 @@ def get_aws_blog(user_input_num):
 
     if res.status_code != 200:
         print("頁面請求失敗")
+        return False
 
     soup = BeautifulSoup(res.content, "html.parser")
     date_regex = r"on\s+(\d{1,2}\s+[A-Z]{3}\s+\d{4})"
@@ -105,22 +106,18 @@ def lambda_handler(event, context):
     if not result_obj_list:
         job_status = "failed"
         results_output = {}
-        for output in parseString(current_job.config_output):
+        for output in parseString(current_job.config_ouxwtput):
             results_output[output["name"]] = "Error"
             # 此 function 回覆 list
-        # FIXME: 需要回覆相同格式嗎？
-        results_output = [results_output]
 
     if len(result_obj_list) == 0:
         job_status = "unfulfilled"
         results_output = {}
         for output in parseString(current_job.config_output):
             results_output[output["name"]] = "undefined"
-        # FIXME: 需要回覆相同格式嗎？
-        results_output = [results_output]
     else:
         job_status = "success"
-        results_output = result_obj_list
+        results_output = {"result_list": result_obj_list}
 
     # 每個 function 都要做的事
     current_job.update_job_status(job_status)
