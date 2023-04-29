@@ -106,6 +106,7 @@ class FunctionflowCdkStack(Stack):
             self, "sendMessageToDiscord", queue_name="sendMessageToDiscordQueue"
         )
         filter_queue = sqs.Queue(self, "filterQueue", queue_name="filterQueue")
+        ptt_scrape_queue = sqs.Queue(self, "pttScrapeQueue", queue_name="pttScrapeQueue")
 
         # Defines an AWS Lambda Layer
         lambdaLayer = _lambda.LayerVersion(
@@ -259,3 +260,27 @@ class FunctionflowCdkStack(Stack):
         )
         filter_event_source = SqsEventSource(filter_queue)
         filter_lambda.add_event_source(filter_event_source)
+
+        # ptt_scrape
+        ptt_scrape_lambda = _lambda.Function(
+            self,
+            "ptt_scrape",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda/code/fn/ptt_scrape"),
+            handler="ptt_scrape.lambda_handler",
+            layers=[lambdaLayer],
+            role=existing_role,
+            timeout=Duration.seconds(30),
+            environment={
+                "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
+                "MYSQL_HOST": MYSQL_HOST.value_as_string,
+                "MYSQL_USER": MYSQL_USER.value_as_string,
+                "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
+                "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
+                "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
+                "ENV": ENV.value_as_string,
+                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+            },
+        )
+        ptt_scrape_event_source = SqsEventSource(ptt_scrape_queue)
+        ptt_scrape_lambda.add_event_source(ptt_scrape_event_source)

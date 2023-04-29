@@ -114,9 +114,9 @@ def lambda_handler(event, context):
     customer_input = current_job.parse_customer_input(queue_obj.steps)
 
     # ptt_scrape 獨特做的事
-    user_target_board = customer_input["user_target_board"]
+    user_target_board = customer_input["target_board"]
     keyword = customer_input["keyword"]
-    custom_interval = int(customer_input["custom_interval"])
+    custom_interval = int(customer_input["interval"])
     url = f"https://www.ptt.cc/bbs/{user_target_board}/index.html"
 
     result_obj_list = get_ptt_data(url, keyword, custom_interval)
