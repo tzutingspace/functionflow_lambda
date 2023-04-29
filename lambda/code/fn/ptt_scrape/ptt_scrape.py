@@ -6,7 +6,7 @@ import time
 import requests
 from bs4 import BeautifulSoup
 
-
+from error_handler import MyErrorHandler
 from Job import Job
 from job_handler import parseString
 from QueueObj import QueueObj
@@ -39,10 +39,12 @@ def get_ptt_data(url, keyword, custom_interval):
         try:
             post_month, post_day = blocks[0].find("div", class_="date").text.split("/")
             check_date = datetime.datetime(today.year, int(post_month), int(post_day)).date()
-        except AttributeError:
+        except AttributeError as e:
+            MyErrorHandler.handle_error("AttributeError", f"@get_ptt_data function {e}")
             print("沒有抓到class_=date div text")
             return False
-        except ValueError:
+        except ValueError as e:
+            MyErrorHandler.handle_error("ValueError", f"@get_ptt_data function {e}")
             print("post_month, post_day 非數字", post_month, post_day)
             return False
 
@@ -59,10 +61,12 @@ def get_ptt_data(url, keyword, custom_interval):
                     check_date = datetime.datetime(
                         today.year, int(post_month), int(post_day)
                     ).date()
-                except AttributeError:
+                except AttributeError as e:
+                    MyErrorHandler.handle_error("AttributeError", f"@get_ptt_data function {e}")
                     print("沒有抓到class_=date div text")
                     return False
-                except ValueError:
+                except ValueError as e:
+                    MyErrorHandler.handle_error("ValueError", f"@get_ptt_data function {e}")
                     print("post_month, post_day 非數字", post_month, post_day)
                     return False
                 if today - check_date <= datetime.timedelta(days=custom_interval):
@@ -70,7 +74,8 @@ def get_ptt_data(url, keyword, custom_interval):
                         title_list.append(block.find("a").text)
                         url_list.append(block.find("a").get("href"))
                         day_list.append(block.find("div", class_="date").text)
-                    except AttributeError:
+                    except AttributeError as e:
+                        MyErrorHandler.handle_error("AttributeError", f"@get_ptt_data function {e}")
                         print("抓取單篇 title, url, day 出現錯誤")
                         return False
         # 確認上一頁
@@ -79,7 +84,8 @@ def get_ptt_data(url, keyword, custom_interval):
             url_get = page.find("a", class_="btn wide", string=re.compile("上頁$")).get("href")
             url_prev = "https://www.ptt.cc" + str(url_get)
             print("上一頁url", url_prev)
-        except AttributeError:
+        except AttributeError as e:
+            MyErrorHandler.handle_error("AttributeError", f"@get_ptt_data function {e}")
             print("取得上一頁的資料出現錯誤, 沒取到資料, AttributeError")
             return False
 
@@ -97,7 +103,8 @@ def get_ptt_data(url, keyword, custom_interval):
             try:
                 result = {"title": title, "url": "https://www.ptt.cc" + url_list[index]}
                 result_obj_list.append(result)
-            except TypeError:
+            except TypeError as e:
+                MyErrorHandler.handle_error("TypeError", f"@get_ptt_data function {e}")
                 print("抓取資料有空值, 無法組合")
                 return False
 
