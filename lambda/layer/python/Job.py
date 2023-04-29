@@ -60,7 +60,7 @@ class Job:
     def update_result_output(self, results):
         self.result_output = {}
         outputs = parseString(self.config_output)
-        print(outputs)
+        print("@update_result_output outputs", outputs)
         for output in outputs:
             output_name = output["name"]
             self.result_output[output_name] = results[output_name]

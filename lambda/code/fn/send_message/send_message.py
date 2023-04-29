@@ -10,6 +10,12 @@ from QueueObj import QueueObj
 def send_discord_message(user_channel_ID, user_message):
     url = f"https://discord.com/api/channels/{user_channel_ID}/messages"
     headers = {"Authorization": os.environ["DISCORDBOTTOKEN"]}
+
+    print("user_message資料結構", type(user_message))
+    if len(user_message) > 2000:
+        print("超出2000字, 截斷message")
+        user_message = user_message[:2000]
+
     data_json = {"content": user_message}
     res = requests.post(url, json=data_json, headers=headers)
     if res.status_code != 200:
@@ -47,4 +53,4 @@ def lambda_handler(event, context):
     current_job.update_end_time()
     queue_obj.update_job_status(current_job)
     queue_obj.put_to_sqs()
-    {"lambda msg": results_output}
+    return {"lambda msg": results_output}

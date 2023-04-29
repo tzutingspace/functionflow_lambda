@@ -56,7 +56,7 @@ def get_aws_blog(user_input_num):
             # Title
             # print("Title: ", post.find("h2").text)
             try:
-                title = post.find("h2").text.strip()
+                title = post.find("h2").get_text(strip=True)
             except AttributeError as e:
                 print("抓取 title 失敗導致 get text 失敗")
                 MyErrorHandler.handle_error("AttributeError", f"@get_aws_blog function {e}")
@@ -75,7 +75,9 @@ def get_aws_blog(user_input_num):
             # print("Section:", post.find("section").text.strip())
 
             try:
-                section = post.find("section").text.strip()
+                section = post.find("section").get_text(strip=True)
+                section = section.replace("\u00A0", " ")
+                section = section.replace("\xa0", " ")
             except AttributeError as e:
                 print("抓取 section 失敗導致 get text 失敗")
                 MyErrorHandler.handle_error("AttributeError", f"@get_aws_blog function {e}")
@@ -98,7 +100,7 @@ def lambda_handler(event, context):
     customer_input = current_job.parse_customer_input(queue_obj.steps)
 
     # aws_blog_scrape 獨特做的事
-    user_input_num = customer_input["interval"]
+    user_input_num = int(customer_input["interval"])
 
     result_obj_list = get_aws_blog(user_input_num)
 
@@ -106,7 +108,7 @@ def lambda_handler(event, context):
     if not result_obj_list:
         job_status = "failed"
         results_output = {}
-        for output in parseString(current_job.config_ouxwtput):
+        for output in parseString(current_job.config_output):
             results_output[output["name"]] = "Error"
             # 此 function 回覆 list
 
