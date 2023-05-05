@@ -26,12 +26,13 @@ def get_ptt_data(url, keyword, custom_interval):
     # 使用者設定區間
     today = datetime.datetime.now().date()
     is_over_setting_day = False
+    count = 0
     title_list = []
     url_list = []
     day_list = []
 
     print("抓取當下日期", today)
-    while not is_over_setting_day:
+    while not is_over_setting_day and count < 30:
         blocks = soup.find_all("div", class_="r-ent")
         if len(blocks) == 0:
             print("找不到任何文章block..., 請確認class是否變動")
@@ -101,7 +102,8 @@ def get_ptt_data(url, keyword, custom_interval):
     for index, title in enumerate(title_list):
         if re.search(regex, title) != None:
             try:
-                result = {"title": title, "url": "https://www.ptt.cc" + url_list[index]}
+                # result = {"title": title, "url": "https://www.ptt.cc" + url_list[index]}
+                result = f"- Title: {title}\n- URL: {'https://www.ptt.cc' + url_list[index]} \n\n"
                 result_obj_list.append(result)
             except TypeError as e:
                 MyErrorHandler.handle_error("TypeError", f"@get_ptt_data function {e}")
