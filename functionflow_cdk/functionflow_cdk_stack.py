@@ -4,8 +4,11 @@ from aws_cdk import aws_sqs as sqs
 from aws_cdk import Duration
 from aws_cdk import aws_lambda as _lambda
 from aws_cdk import aws_iam as iam
-from aws_cdk import CfnOutput, Stack
+from aws_cdk import Stack
 from aws_cdk import CfnParameter
+
+# from aws_cdk import CfnOutput
+
 import os
 
 from dotenv import load_dotenv
@@ -98,17 +101,69 @@ class FunctionflowCdkStack(Stack):
         # Outputs出欲確認資料
         # CfnOutput(self, "ServiceAccountIamRole", value=existing_role.role_arn)
 
-        # Create a new SQS Queue
-        queue = sqs.Queue(self, "jobsQueue", queue_name="jobsQueue")
-        manualTriggerQueue = sqs.Queue(self, "manualTriggerQueue", queue_name="manualTriggerQueue")
-        get_weather_queue = sqs.Queue(self, "getWeatherQueue", queue_name="getWeatherQueue")
-        send_message_queue = sqs.Queue(
-            self, "sendMessageToDiscord", queue_name="sendMessageToDiscordQueue"
+        # Dead_letter_queue
+        dlq = sqs.Queue(
+            self,
+            "myDeadLetterQueue",
+            queue_name="myDeadLetterQueue",
         )
-        filter_queue = sqs.Queue(self, "filterQueue", queue_name="filterQueue")
-        ptt_scrape_queue = sqs.Queue(self, "pttScrapeQueue", queue_name="pttScrapeQueue")
+
+        # Create a new SQS Queue
+        queue = sqs.Queue(
+            self,
+            "jobsQueue",
+            queue_name="jobsQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+        manualTriggerQueue = sqs.Queue(
+            self,
+            "manualTriggerQueue",
+            queue_name="manualTriggerQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+        get_weather_queue = sqs.Queue(
+            self,
+            "getWeatherQueue",
+            queue_name="getWeatherQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+        send_message_queue = sqs.Queue(
+            self,
+            "sendMessageToDiscord",
+            queue_name="sendMessageToDiscordQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+        filter_queue = sqs.Queue(
+            self,
+            "filterQueue",
+            queue_name="filterQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+        ptt_scrape_queue = sqs.Queue(
+            self,
+            "pttScrapeQueue",
+            queue_name="pttScrapeQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
         aws_blog_scrape_queue = sqs.Queue(
-            self, "awsBlogScrapeQueue", queue_name="awsBlogScrapeQueue"
+            self,
+            "awsBlogScrapeQueue",
+            queue_name="awsBlogScrapeQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
         )
 
         # Defines an AWS Lambda Layer
@@ -166,7 +221,7 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        event_source = SqsEventSource(queue)
+        event_source = SqsEventSource(queue, batch_size=1)
         executer.add_event_source(event_source)
 
         # manual_executer
@@ -189,7 +244,7 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        maulal_trigger_event_source = SqsEventSource(manualTriggerQueue)
+        maulal_trigger_event_source = SqsEventSource(manualTriggerQueue, batch_size=1)
         manual_executer.add_event_source(maulal_trigger_event_source)
 
         # get_weather
@@ -213,7 +268,7 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        get_weather_event_source = SqsEventSource(get_weather_queue)
+        get_weather_event_source = SqsEventSource(get_weather_queue, batch_size=1)
         get_weather.add_event_source(get_weather_event_source)
 
         # send_message
@@ -237,7 +292,7 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        send_message_event_source = SqsEventSource(send_message_queue)
+        send_message_event_source = SqsEventSource(send_message_queue, batch_size=1)
         send_message.add_event_source(send_message_event_source)
 
         # filter
@@ -261,7 +316,7 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        filter_event_source = SqsEventSource(filter_queue)
+        filter_event_source = SqsEventSource(filter_queue, batch_size=1)
         filter_lambda.add_event_source(filter_event_source)
 
         # ptt_scrape
@@ -285,7 +340,7 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        ptt_scrape_event_source = SqsEventSource(ptt_scrape_queue)
+        ptt_scrape_event_source = SqsEventSource(ptt_scrape_queue, batch_size=1)
         ptt_scrape_lambda.add_event_source(ptt_scrape_event_source)
 
         # aws_blog_scrape
@@ -297,7 +352,7 @@ class FunctionflowCdkStack(Stack):
             handler="aws_blog_scrape.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -309,5 +364,5 @@ class FunctionflowCdkStack(Stack):
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
         )
-        aws_blog_scrape_event_source = SqsEventSource(aws_blog_scrape_queue)
+        aws_blog_scrape_event_source = SqsEventSource(aws_blog_scrape_queue, batch_size=1)
         aws_blog_scrape_lambda.add_event_source(aws_blog_scrape_event_source)

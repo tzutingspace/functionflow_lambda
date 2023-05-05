@@ -78,6 +78,12 @@ class Job:
                 # result_output = json.loads(stepsInfo[job_name]["result_output"])
                 result_output = parseString(stepsInfo[job_name]["result_output"])
                 result_variable = result_output[result_name]
+                if type(result_variable) == list:
+                    print("處理list格式的資料")
+                    combine_string = ""
+                    for data in result_variable:
+                        combine_string += data.replace("\n", "\\n")
+                    result_variable = combine_string
             except TypeError as e:
                 MyErrorHandler.handle_error("TypeError", f"@parse custom input: {e}")
                 result_variable = "undefined"
@@ -86,6 +92,7 @@ class Job:
                 result_variable = "undefined"
             config = config.replace("{{" + result + "}}", str(result_variable))  # 取代string
         # return json.loads(config)  # 解析成obj
+        print("config result", config)
         return parseString(config)
 
     @staticmethod

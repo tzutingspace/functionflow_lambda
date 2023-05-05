@@ -23,7 +23,7 @@ def get_aws_blog(user_input_num):
     date_regex = r"on\s+(\d{1,2}\s+[A-Z]{3}\s+\d{4})"
     # user_input_num = 7
     now = datetime.datetime.now()
-    now_N_ago = now - datetime.timedelta(days=user_input_num)  # 计算N天前的日期 文章日期為使用者輸入的區間
+    now_N_ago = now - datetime.timedelta(days=user_input_num)  # 計算N天前的日期 文章日期為使用者輸入的區間
 
     main_content = soup.find("main", id="aws-page-content-main")
     try:
@@ -88,50 +88,53 @@ def get_aws_blog(user_input_num):
             #     return False
 
             # 組成一個字串
-            result_obj = {"Date": post_date_str, "Title": title, "URL": url}
+            # result_obj = {"Date": post_date_str, "Title": title, "URL": url}
+            result_obj = f"- Date: {post_date_str}\n- Title: {title}\n- URL:{url} \n\n"
+
             result_obj_list.append(result_obj)
 
     return result_obj_list
 
 
 def lambda_handler(event, context):
-    for messages in event["Records"]:
-        # 每個 function 都要做的事
-        body = json.loads(messages["body"])
-        print(f"來源內容{body}")
-        queue_obj = QueueObj(None, body)
-        current_job = Job(queue_obj.steps[queue_obj.step_now])
-        current_job.update_start_time()  # 更新開始時間
-        customer_input = current_job.parse_customer_input(queue_obj.steps)
+    # for messages in event["Records"]: // lambda batch_size = 1
+    # 每個 function 都要做的事
+    print("START EVENT", event)
+    body = json.loads(event["Records"][0]["body"])
+    print(f"來源內容{body}")
+    queue_obj = QueueObj(None, body)
+    current_job = Job(queue_obj.steps[queue_obj.step_now])
+    current_job.update_start_time()  # 更新開始時間
+    customer_input = current_job.parse_customer_input(queue_obj.steps)
 
-        # aws_blog_scrape 獨特做的事
-        user_input_num = int(customer_input["interval"])
+    # aws_blog_scrape 獨特做的事
+    user_input_num = int(customer_input["interval"])
 
-        result_obj_list = get_aws_blog(user_input_num)
+    result_obj_list = get_aws_blog(user_input_num)
 
-        # get data 異常
-        if not result_obj_list:
-            job_status = "failed"
-            results_output = {}
-            for output in parseString(current_job.config_output):
-                results_output[output["name"]] = "Error"
-                # 此 function 回覆 list
+    # get data 異常
+    if not result_obj_list:
+        job_status = "failed"
+        results_output = {}
+        for output in parseString(current_job.config_output):
+            results_output[output["name"]] = "Error"
+            # 此 function 回覆 list
 
-        if len(result_obj_list) == 0:
-            job_status = "unfulfilled"
-            results_output = {}
-            for output in parseString(current_job.config_output):
-                results_output[output["name"]] = "undefined"
-        else:
-            job_status = "success"
-            results_output = {"result_list": result_obj_list}
+    if len(result_obj_list) == 0:
+        job_status = "unfulfilled"
+        results_output = {}
+        for output in parseString(current_job.config_output):
+            results_output[output["name"]] = "undefined"
+    else:
+        job_status = "success"
+        results_output = {"result_list": result_obj_list}
 
-        # 每個 function 都要做的事
-        current_job.update_job_status(job_status)
-        current_job.update_result_output(results_output)
-        current_job.update_end_time()
+    # 每個 function 都要做的事
+    current_job.update_job_status(job_status)
+    current_job.update_result_output(results_output)
+    current_job.update_end_time()
 
-        queue_obj.update_job_status(current_job)
-        queue_obj.put_to_sqs()
+    queue_obj.update_job_status(current_job)
+    queue_obj.put_to_sqs()
 
     return {"lambda msg": results_output}
