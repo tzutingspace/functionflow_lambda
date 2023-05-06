@@ -10,7 +10,8 @@ from Workflow import Workflow
 def lambda_handler(event, context):
     # 抓取本次Scheduler區間
     dt0 = datetime.utcnow().replace(tzinfo=timezone.utc)
-    current_date_and_time = dt0.astimezone(timezone(timedelta(hours=8)))
+    # current_date_and_time = dt0.astimezone(timezone(timedelta(hours=8)))
+    current_date_and_time = dt0
     time_interval = timedelta(minutes=int(os.environ["MIN_TIME_INTERVAL"]))
     end_date_and_time = current_date_and_time + time_interval
 

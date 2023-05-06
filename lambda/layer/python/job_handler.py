@@ -5,7 +5,8 @@ from datetime import datetime, timedelta, timezone
 # Function
 def get_now_time():
     dt0 = datetime.utcnow().replace(tzinfo=timezone.utc)
-    return dt0.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
+    return dt0.strftime("%Y-%m-%d %H:%M:%S")
+    # return dt0.astimezone(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def parseString(json_string):
