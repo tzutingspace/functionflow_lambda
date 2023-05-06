@@ -91,6 +91,13 @@ class FunctionflowCdkStack(Stack):
             description="AWS QUEUE URL",
             no_echo=True,  # 配置参数不顯示
         )
+        MAILERSEND_API_KEY = CfnParameter(
+            self,
+            "MAILERSENDAPIKEY",
+            type="String",
+            description="MAILERSEND_API_KEY",
+            no_echo=True,  # 配置参数不顯示
+        )
 
         # 透過角色 ARN 來取得現有的 IAM 角色
         existing_role_arn = (
@@ -137,6 +144,14 @@ class FunctionflowCdkStack(Stack):
             self,
             "sendMessageToDiscord",
             queue_name="sendMessageToDiscordQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+        send_email_queue = sqs.Queue(
+            self,
+            "sendEmail",
+            queue_name="sendEmailQueue",
             visibility_timeout=Duration.seconds(960),  # 16min,
             receive_message_wait_time=Duration.seconds(20),
             dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
@@ -188,7 +203,7 @@ class FunctionflowCdkStack(Stack):
             handler="scheduler.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -210,7 +225,7 @@ class FunctionflowCdkStack(Stack):
             handler="executer.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -233,7 +248,7 @@ class FunctionflowCdkStack(Stack):
             handler="executer.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -256,7 +271,7 @@ class FunctionflowCdkStack(Stack):
             handler="get_weather.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -280,7 +295,7 @@ class FunctionflowCdkStack(Stack):
             handler="send_message.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -295,6 +310,31 @@ class FunctionflowCdkStack(Stack):
         send_message_event_source = SqsEventSource(send_message_queue, batch_size=1)
         send_message.add_event_source(send_message_event_source)
 
+        # send_message
+        send_email = _lambda.Function(
+            self,
+            "send_email",
+            runtime=_lambda.Runtime.PYTHON_3_9,
+            code=_lambda.Code.from_asset("lambda/code/fn/send_email"),
+            handler="send_email.lambda_handler",
+            layers=[lambdaLayer],
+            role=existing_role,
+            timeout=Duration.seconds(900),  # 15min
+            environment={
+                "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
+                "MYSQL_HOST": MYSQL_HOST.value_as_string,
+                "MYSQL_USER": MYSQL_USER.value_as_string,
+                "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
+                "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
+                "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
+                "ENV": ENV.value_as_string,
+                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "MAILERSEND_API_KEY": MAILERSEND_API_KEY.value_as_string,
+            },
+        )
+        send_email_event_source = SqsEventSource(send_email_queue, batch_size=1)
+        send_email.add_event_source(send_email_event_source)
+
         # filter
         filter_lambda = _lambda.Function(
             self,
@@ -304,7 +344,7 @@ class FunctionflowCdkStack(Stack):
             handler="filter.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
@@ -328,7 +368,7 @@ class FunctionflowCdkStack(Stack):
             handler="ptt_scrape.lambda_handler",
             layers=[lambdaLayer],
             role=existing_role,
-            timeout=Duration.seconds(30),
+            timeout=Duration.seconds(900),  # 15min
             environment={
                 "AWS_REGION_NAME": AWS_REGION_NAME.value_as_string,
                 "MYSQL_HOST": MYSQL_HOST.value_as_string,
