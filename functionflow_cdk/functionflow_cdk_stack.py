@@ -7,6 +7,9 @@ from aws_cdk import aws_iam as iam
 from aws_cdk import Stack
 from aws_cdk import CfnParameter
 
+from aws_cdk import aws_events
+from aws_cdk import aws_events_targets
+
 # from aws_cdk import CfnOutput
 
 import os
@@ -214,6 +217,14 @@ class FunctionflowCdkStack(Stack):
                 "ENV": ENV.value_as_string,
                 "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
             },
+        )
+
+        # eventBridge
+        aws_events.Rule(
+            self,
+            "ScheduleRule",
+            schedule=aws_events.Schedule.rate(Duration.minutes(60)),
+            targets=[aws_events_targets.LambdaFunction(handler=scheduler)],
         )
 
         # executer
