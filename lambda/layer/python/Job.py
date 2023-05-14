@@ -96,7 +96,7 @@ class Job:
         return parseString(config)
 
     @staticmethod
-    def updata_job_instances(connDB, queueObj):
+    def update_job_instances(connDB, queueObj):
         sql = """
             UPDATE jobs_instances
             SET status=%s, start_time=%s,
@@ -107,13 +107,13 @@ class Job:
         jobs = queueObj["steps"]
         params = [
             (
-                jobs[jobi]["status"],
-                jobs[jobi]["start_time"],
-                jobs[jobi]["end_time"],
-                jobs[jobi]["result_output"],
-                jobs[jobi]["id"],
+                jobs[job_instances]["status"],
+                jobs[job_instances]["start_time"],
+                jobs[job_instances]["end_time"],
+                jobs[job_instances]["result_output"],
+                jobs[job_instances]["id"],
             )
-            for jobi in jobs.keys()
+            for job_instances in jobs.keys()
         ]
         result = connDB.update(sql, params, many=True)
         job_instances_ids = [(job[4]) for job in params]

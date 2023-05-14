@@ -11,7 +11,7 @@ def get_weather(city, elementName):
     url = "https://opendata.cwb.gov.tw/api/v1/rest/datastore/F-C0032-001"
     headers = {"user-agent": "Mozilla/5.0"}
     params = {
-        "Authorization": os.getenv("OPENAPIKEY"),
+        "Authorization": os.getenv("OPEN_API_KEY"),
         "format": "JSON",
         "locationName": city,
         "sort": "time",
@@ -32,8 +32,8 @@ def get_weather(city, elementName):
     return weather_element_value
 
 
-def parse_weather_temp(weatherstatus):
-    return {"temperature": int(weatherstatus["time"][0]["parameter"]["parameterName"])}
+def parse_weather_temp(weather_status):
+    return {"temperature": int(weather_status["time"][0]["parameter"]["parameterName"])}
 
 
 def lambda_handler(event, context):
@@ -50,15 +50,15 @@ def lambda_handler(event, context):
     city = customer_input["city"]
     condition = customer_input["condition"]
     # temperature = customer_input["temperature"]
-    weatherstatus = get_weather(city, condition)
-    if not weatherstatus:
+    weather_status = get_weather(city, condition)
+    if not weather_status:
         job_status = "failed"
         results_output = {}
         for output in parseString(current_job.config_output):
             results_output[output["name"]] = "Error"
     else:
         job_status = "success"
-        results_output = parse_weather_temp(weatherstatus)
+        results_output = parse_weather_temp(weather_status)
 
     # 每個function 都要做的事
     current_job.update_job_status(job_status)

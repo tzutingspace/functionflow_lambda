@@ -108,7 +108,6 @@ class QueueObj:
             self.workflow["status"] = "finished"
             self.no_next_queue_action()
             return {"lambda msg": "此 workflow instance finished."}
-        # TODO:next_job > 1 -> 判斷要放哪一個job 進SQS
         else:
             print("next jobs > 1 , 請處理")
             return {"lambda msg": "next jobs > 1 , 請處理"}
@@ -119,7 +118,7 @@ class QueueObj:
         connDB = Database()
         Workflow.update_workflow_instance(connDB, self.workflow)
         # 更新 jobs 本次紀錄
-        Job.updata_job_instances(connDB, vars(self))
+        Job.update_job_instances(connDB, vars(self))
         connDB.close()
         print("已更新資料庫...")
         if self.workflow["manual_trigger"] == "t":
@@ -129,7 +128,7 @@ class QueueObj:
             headers = {"Content-Type": "application/json"}
             print("data", data)
             res = requests.post(
-                "https://api.tingproject.link/triggerFinish", json=data, headers=headers
+                "https://api.tingproject.link/api/trigger-finish", json=data, headers=headers
             )
             print("通知 server 結果, 回覆:", res)
 

@@ -4,7 +4,6 @@ import re
 
 import requests
 from bs4 import BeautifulSoup
-
 from error_handler import MyErrorHandler
 from Job import Job
 from job_handler import parseString
@@ -21,7 +20,6 @@ def get_aws_blog(user_input_num):
 
     soup = BeautifulSoup(res.content, "html.parser")
     date_regex = r"on\s+(\d{1,2}\s+[A-Z]{3}\s+\d{4})"
-    # user_input_num = 7
     now = datetime.datetime.now()
     now_N_ago = now - datetime.timedelta(days=user_input_num)  # 計算N天前的日期 文章日期為使用者輸入的區間
 
@@ -50,11 +48,6 @@ def get_aws_blog(user_input_num):
 
         result_obj = {}
         if now_N_ago <= post_date <= now:
-            # 日期
-            # print("Date:", post_date_str)
-
-            # Title
-            # print("Title: ", post.find("h2").text)
             try:
                 title = post.find("h2").get_text(strip=True)
                 title = title.replace("\u00A0", " ")
@@ -65,8 +58,6 @@ def get_aws_blog(user_input_num):
                 MyErrorHandler.handle_error("AttributeError", f"@get_aws_blog function {e}")
                 return False
 
-            # URL
-            # print("URL: ", post.find("a").get("href"))
             try:
                 url = post.find("a").get("href").strip()
             except AttributeError as e:
@@ -74,21 +65,7 @@ def get_aws_blog(user_input_num):
                 MyErrorHandler.handle_error("AttributeError", f"@get_aws_blog function {e}")
                 return False
 
-            # section
-            # print("Section:", post.find("section").text.strip())
-
-            # 字數過多通知無意義, 取消 section
-            # try:
-            #     section = post.find("section").get_text(strip=True)
-            #     section = section.replace("\u00A0", " ")
-            #     section = section.replace("\xa0", " ")
-            # except AttributeError as e:
-            #     print("抓取 section 失敗導致 get text 失敗")
-            #     MyErrorHandler.handle_error("AttributeError", f"@get_aws_blog function {e}")
-            #     return False
-
             # 組成一個字串
-            # result_obj = {"Date": post_date_str, "Title": title, "URL": url}
             result_obj = f"- Date: {post_date_str}\n- Title: {title}\n- URL:{url} \n\n"
 
             result_obj_list.append(result_obj)

@@ -1,21 +1,14 @@
-from constructs import Construct
-from aws_cdk.aws_lambda_event_sources import SqsEventSource
-from aws_cdk import aws_sqs as sqs
-from aws_cdk import Duration
-from aws_cdk import aws_lambda as _lambda
-from aws_cdk import aws_iam as iam
-from aws_cdk import Stack
-from aws_cdk import CfnParameter
-
-from aws_cdk import aws_events
-from aws_cdk import aws_events_targets
-
-# from aws_cdk import CfnOutput
-
 import os
 
+from aws_cdk import CfnParameter, Duration, Stack, aws_events, aws_events_targets
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_lambda as _lambda
+from aws_cdk import aws_sqs as sqs
+from aws_cdk.aws_lambda_event_sources import SqsEventSource
+from constructs import Construct
 from dotenv import load_dotenv
 
+# from aws_cdk import CfnOutput
 load_dotenv()
 
 
@@ -63,19 +56,19 @@ class FunctionflowCdkStack(Stack):
             self,
             "MIN_TIME_INTERVAL",
             type="String",
-            description="sheduler min time to tigger",
+            description="scheduler min time to trigger",
             no_echo=True,  # 配置参数不顯示
         )
-        OPENAPIKEY = CfnParameter(
+        OPEN_API_KEY = CfnParameter(
             self,
-            "OPENAPIKEY",
+            "OPEN_API_KEY",
             type="String",
-            description="weather OPENAPIKEY",
+            description="weather OPEN_API_KEY",
             no_echo=True,  # 配置参数不顯示
         )
-        DISCORDBOTTOKEN = CfnParameter(
+        DISCORD_BOT_TOKEN = CfnParameter(
             self,
-            "DISCORDBOTTOKEN",
+            "DISCORD_BOT_TOKEN",
             type="String",
             description="DISCORD BOT TOKEN",
             no_echo=True,  # 配置参数不顯示
@@ -87,18 +80,18 @@ class FunctionflowCdkStack(Stack):
             description="ENV",
             no_echo=True,  # 配置参数不顯示
         )
-        AWSQUEUEURL = CfnParameter(
+        AWS_QUEUE_URL = CfnParameter(
             self,
-            "AWSQUEUEURL",
+            "AWS_QUEUE_URL",
             type="String",
             description="AWS QUEUE URL",
             no_echo=True,  # 配置参数不顯示
         )
-        MAILERSEND_API_KEY = CfnParameter(
+        MAILER_SEND_API_KEY = CfnParameter(
             self,
-            "MAILERSENDAPIKEY",
+            "MAILER_SEND_API_KEY",
             type="String",
-            description="MAILERSEND_API_KEY",
+            description="MAILER_SEND_API_KEY",
             no_echo=True,  # 配置参数不顯示
         )
 
@@ -116,72 +109,6 @@ class FunctionflowCdkStack(Stack):
             self,
             "myDeadLetterQueue",
             queue_name="myDeadLetterQueue",
-        )
-
-        # Create a new SQS Queue
-        queue = sqs.Queue(
-            self,
-            "jobsQueue",
-            queue_name="jobsQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        manualTriggerQueue = sqs.Queue(
-            self,
-            "manualTriggerQueue",
-            queue_name="manualTriggerQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        get_weather_queue = sqs.Queue(
-            self,
-            "getWeatherQueue",
-            queue_name="getWeatherQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        send_message_queue = sqs.Queue(
-            self,
-            "sendMessageToDiscord",
-            queue_name="sendMessageToDiscordQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        send_email_queue = sqs.Queue(
-            self,
-            "sendEmail",
-            queue_name="sendEmailQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        filter_queue = sqs.Queue(
-            self,
-            "filterQueue",
-            queue_name="filterQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        ptt_scrape_queue = sqs.Queue(
-            self,
-            "pttScrapeQueue",
-            queue_name="pttScrapeQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
-        )
-        aws_blog_scrape_queue = sqs.Queue(
-            self,
-            "awsBlogScrapeQueue",
-            queue_name="awsBlogScrapeQueue",
-            visibility_timeout=Duration.seconds(960),  # 16min,
-            receive_message_wait_time=Duration.seconds(20),
-            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
         )
 
         # Defines an AWS Lambda Layer
@@ -215,7 +142,7 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
                 "MIN_TIME_INTERVAL": MIN_TIME_INTERVAL.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
 
@@ -227,7 +154,7 @@ class FunctionflowCdkStack(Stack):
             targets=[aws_events_targets.LambdaFunction(handler=scheduler)],
         )
 
-        # executer
+        # executer lambda
         executer = _lambda.Function(
             self,
             "executer",
@@ -244,10 +171,20 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
-        event_source = SqsEventSource(queue, batch_size=1)
+
+        jobs_queue = sqs.Queue(
+            self,
+            "jobsQueue",
+            queue_name="jobsQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
+        event_source = SqsEventSource(jobs_queue, batch_size=1)
         executer.add_event_source(event_source)
 
         # manual_executer
@@ -267,11 +204,21 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
-        maulal_trigger_event_source = SqsEventSource(manualTriggerQueue, batch_size=1)
-        manual_executer.add_event_source(maulal_trigger_event_source)
+
+        manualTriggerQueue = sqs.Queue(
+            self,
+            "manualTriggerQueue",
+            queue_name="manualTriggerQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
+        manual_trigger_event_source = SqsEventSource(manualTriggerQueue, batch_size=1)
+        manual_executer.add_event_source(manual_trigger_event_source)
 
         # get_weather
         get_weather = _lambda.Function(
@@ -289,11 +236,21 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_USER": MYSQL_USER.value_as_string,
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
-                "OPENAPIKEY": OPENAPIKEY.value_as_string,
+                "OPEN_API_KEY": OPEN_API_KEY.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
+
+        get_weather_queue = sqs.Queue(
+            self,
+            "getWeatherQueue",
+            queue_name="getWeatherQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
         get_weather_event_source = SqsEventSource(get_weather_queue, batch_size=1)
         get_weather.add_event_source(get_weather_event_source)
 
@@ -313,11 +270,21 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_USER": MYSQL_USER.value_as_string,
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
-                "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
+                "DISCORD_BOT_TOKEN": DISCORD_BOT_TOKEN.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
+
+        send_message_queue = sqs.Queue(
+            self,
+            "sendMessageToDiscord",
+            queue_name="sendMessageToDiscordQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
         send_message_event_source = SqsEventSource(send_message_queue, batch_size=1)
         send_message.add_event_source(send_message_event_source)
 
@@ -337,12 +304,21 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_USER": MYSQL_USER.value_as_string,
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
-                "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
-                "MAILERSEND_API_KEY": MAILERSEND_API_KEY.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
+                "MAILER_SEND_API_KEY": MAILER_SEND_API_KEY.value_as_string,
             },
         )
+
+        send_email_queue = sqs.Queue(
+            self,
+            "sendEmail",
+            queue_name="sendEmailQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
         send_email_event_source = SqsEventSource(send_email_queue, batch_size=1)
         send_email.add_event_source(send_email_event_source)
 
@@ -362,11 +338,20 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_USER": MYSQL_USER.value_as_string,
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
-                "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
+
+        filter_queue = sqs.Queue(
+            self,
+            "filterQueue",
+            queue_name="filterQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
         filter_event_source = SqsEventSource(filter_queue, batch_size=1)
         filter_lambda.add_event_source(filter_event_source)
 
@@ -386,11 +371,20 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_USER": MYSQL_USER.value_as_string,
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
-                # "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
+
+        ptt_scrape_queue = sqs.Queue(
+            self,
+            "pttScrapeQueue",
+            queue_name="pttScrapeQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
         ptt_scrape_event_source = SqsEventSource(ptt_scrape_queue, batch_size=1)
         ptt_scrape_lambda.add_event_source(ptt_scrape_event_source)
 
@@ -410,10 +404,19 @@ class FunctionflowCdkStack(Stack):
                 "MYSQL_USER": MYSQL_USER.value_as_string,
                 "MYSQL_PASSWORD": MYSQL_PASSWORD.value_as_string,
                 "MYSQL_DATABASE": MYSQL_DATABASE.value_as_string,
-                # "DISCORDBOTTOKEN": DISCORDBOTTOKEN.value_as_string,
                 "ENV": ENV.value_as_string,
-                "AWS_QUEUE_URL": AWSQUEUEURL.value_as_string,
+                "AWS_QUEUE_URL": AWS_QUEUE_URL.value_as_string,
             },
         )
+
+        aws_blog_scrape_queue = sqs.Queue(
+            self,
+            "awsBlogScrapeQueue",
+            queue_name="awsBlogScrapeQueue",
+            visibility_timeout=Duration.seconds(960),  # 16min,
+            receive_message_wait_time=Duration.seconds(20),
+            dead_letter_queue=sqs.DeadLetterQueue(max_receive_count=1, queue=dlq),
+        )
+
         aws_blog_scrape_event_source = SqsEventSource(aws_blog_scrape_queue, batch_size=1)
         aws_blog_scrape_lambda.add_event_source(aws_blog_scrape_event_source)

@@ -9,7 +9,7 @@ from QueueObj import QueueObj
 
 def send_discord_message(user_channel_ID, user_message):
     url = f"https://discord.com/api/channels/{user_channel_ID}/messages"
-    headers = {"Authorization": os.environ["DISCORDBOTTOKEN"]}
+    headers = {"Authorization": os.environ["DISCORD_BOT_TOKEN"]}
 
     print("user_message資料結構", type(user_message))
     if len(user_message) > 2000:

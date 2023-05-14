@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     time_interval = timedelta(minutes=int(os.environ["MIN_TIME_INTERVAL"]))
     end_date_and_time = current_date_and_time + time_interval
 
-    print(f"本次Scheuler預計抓取區間 {current_date_and_time} ~ {end_date_and_time}")
+    print(f"本次Scheduler預計抓取區間 {current_date_and_time} ~ {end_date_and_time}")
 
     db = Database()
 
@@ -79,4 +79,4 @@ def lambda_handler(event, context):
 
     db.close()
 
-    return {"lambda msg": "Sceduler Success"}
+    return {"lambda msg": "Scheduler Success"}

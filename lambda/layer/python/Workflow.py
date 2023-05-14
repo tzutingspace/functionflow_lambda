@@ -22,8 +22,8 @@ class Workflow:
     def update_workflow_status(self, status):
         self.status = status
 
-    def update_manual_trigger(self, ismanual_trigger):
-        self.manual_trigger = ismanual_trigger
+    def update_manual_trigger(self, is_manual_trigger):
+        self.manual_trigger = is_manual_trigger
 
     def calculate_next_execute_time(self):
         # 假設都是此 workflow trigger_type schedule 的情況下

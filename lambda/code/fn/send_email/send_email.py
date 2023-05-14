@@ -1,16 +1,13 @@
+import json
 import os
 
-import json
-
 from Job import Job
+from mailersend import emails
 from QueueObj import QueueObj
 
 
-from mailersend import emails
-
-
-def send_email(username, useremail, subject, content):
-    mailer = emails.NewEmail(os.getenv("MAILERSEND_API_KEY"))
+def send_email(username, user_email, subject, content):
+    mailer = emails.NewEmail(os.getenv("MAILER_SEND_API_KEY"))
     # define an empty dict to populate with mail values
     mail_body = {}
     mail_from = {
@@ -21,7 +18,7 @@ def send_email(username, useremail, subject, content):
     recipients = [
         {
             "name": username,
-            "email": useremail,
+            "email": user_email,
         }
     ]
 
@@ -34,7 +31,7 @@ def send_email(username, useremail, subject, content):
     res = mailer.send(mail_body)
     if res != "202\n":
         print(
-            f"Error: sending email. Username: {username}, Email: {useremail}, \
+            f"Error: sending email. Username: {username}, Email: {user_email}, \
               Subject: {subject}, Content:{content}"
         )
         print(f"Error Message: {res}")
