@@ -150,7 +150,7 @@ class FunctionflowCdkStack(Stack):
         aws_events.Rule(
             self,
             "ScheduleRule",
-            schedule=aws_events.Schedule.rate(Duration.minutes(60)),
+            schedule=aws_events.Schedule.rate(Duration.minutes(1)),
             targets=[aws_events_targets.LambdaFunction(handler=scheduler)],
         )
 
