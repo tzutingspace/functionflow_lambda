@@ -107,11 +107,11 @@ class Job:
         jobs = queueObj["steps"]
         params = [
             (
-                jobs[job_instances]["status"],
-                jobs[job_instances]["start_time"],
-                jobs[job_instances]["end_time"],
-                jobs[job_instances]["result_output"],
-                jobs[job_instances]["id"],
+                jobs[job_instances].get("status"),
+                jobs[job_instances].get("start_time"),
+                jobs[job_instances].get("end_time"),
+                jobs[job_instances].get("result_output"),
+                jobs[job_instances].get("id"),
             )
             for job_instances in jobs.keys()
         ]
