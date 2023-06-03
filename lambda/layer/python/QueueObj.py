@@ -70,18 +70,18 @@ class QueueObj:
     def failed_action(self):
         # 先移除當下job
         self.pop_current_step()
+        self.workflow["status"] = "failed"
         for job in self.ready_execute_job:
             self.steps[job]["status"] = "upstream_failed"
-            self.workflow["status"] = "failed"
         self.no_next_queue_action()
         return {"lambda msg": "此 workflow instance failed"}
 
     def unfulfilled_action(self):
         # 先移除當下job
         self.pop_current_step()
+        self.workflow["status"] = "finished"
         for job in self.ready_execute_job:
             self.steps[job]["status"] = "upstream_unfulfilled"
-            self.workflow["status"] = "finished"
         self.no_next_queue_action()
         return {"lambda msg": "此 workflow instance finished (upstream_unfulfilled)"}
 
